@@ -12,24 +12,24 @@
 class Data
 {
 protected:
-    int8_t m_formatFlag;
-    uint8_t m_keyLen;
-    std::string m_key;
+    int8_t formatFlag;
+    uint8_t keyLen;
+    std::string key;
     
 public:
     void setFormatFlag(int8_t flag)
     {
-        m_formatFlag = flag;
+        formatFlag = flag;
     }
     
     char getFormatFlag()
     {
-        return m_formatFlag;
+        return formatFlag;
     }
     
     uint8_t getKeyLength()
     {
-        return m_keyLen;
+        return keyLen;
     }
     
     bool setKey(std::string key)
@@ -37,8 +37,8 @@ public:
         if(key.length() > UINT8_MAX)
             return false;
         
-        m_keyLen = key.length();
-        m_key = key;
+        keyLen = key.length();
+        key = key;
         return true;
     }
     
