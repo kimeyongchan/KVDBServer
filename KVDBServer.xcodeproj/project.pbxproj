@@ -20,6 +20,8 @@
 		6FE490A51B68ABF600B6E52C /* RequestHandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6FE490951B68ABF600B6E52C /* RequestHandler.cpp */; };
 		6FE490A61B68ABF600B6E52C /* ResponseHandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6FE490981B68ABF600B6E52C /* ResponseHandler.cpp */; };
 		6FE490A71B68ABF600B6E52C /* WorkerThread.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6FE4909A1B68ABF600B6E52C /* WorkerThread.cpp */; };
+		6FE490C31B69146B00B6E52C /* DiskManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6FE490C11B69146B00B6E52C /* DiskManager.cpp */; };
+		6FE490C61B69170500B6E52C /* SuperBlock.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6FE490C41B69170500B6E52C /* SuperBlock.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -63,6 +65,10 @@
 		6FE490991B68ABF600B6E52C /* ResponseHandler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ResponseHandler.h; sourceTree = "<group>"; };
 		6FE4909A1B68ABF600B6E52C /* WorkerThread.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = WorkerThread.cpp; sourceTree = "<group>"; };
 		6FE4909B1B68ABF600B6E52C /* WorkerThread.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WorkerThread.h; sourceTree = "<group>"; };
+		6FE490C11B69146B00B6E52C /* DiskManager.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DiskManager.cpp; sourceTree = "<group>"; };
+		6FE490C21B69146B00B6E52C /* DiskManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DiskManager.h; sourceTree = "<group>"; };
+		6FE490C41B69170500B6E52C /* SuperBlock.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SuperBlock.cpp; sourceTree = "<group>"; };
+		6FE490C51B69170500B6E52C /* SuperBlock.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SuperBlock.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -139,6 +145,8 @@
 				6FE4908D1B68ABF600B6E52C /* KeyValueData.cpp */,
 				6FE4908E1B68ABF600B6E52C /* KeyValueData.h */,
 				6FE490971B68ABF600B6E52C /* RequestInfo.h */,
+				6FE490C41B69170500B6E52C /* SuperBlock.cpp */,
+				6FE490C51B69170500B6E52C /* SuperBlock.h */,
 			);
 			name = CommonData;
 			sourceTree = "<group>";
@@ -153,6 +161,8 @@
 		6FE490AB1B68AC2100B6E52C /* Disk */ = {
 			isa = PBXGroup;
 			children = (
+				6FE490C11B69146B00B6E52C /* DiskManager.cpp */,
+				6FE490C21B69146B00B6E52C /* DiskManager.h */,
 			);
 			name = Disk;
 			sourceTree = "<group>";
@@ -222,6 +232,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6FE490C61B69170500B6E52C /* SuperBlock.cpp in Sources */,
+				6FE490C31B69146B00B6E52C /* DiskManager.cpp in Sources */,
 				6FE490A51B68ABF600B6E52C /* RequestHandler.cpp in Sources */,
 				6FE4909D1B68ABF600B6E52C /* Data.cpp in Sources */,
 				6FE490A11B68ABF600B6E52C /* KeyValueData.cpp in Sources */,
@@ -351,6 +363,7 @@
 				6FE490811B68AB9600B6E52C /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
