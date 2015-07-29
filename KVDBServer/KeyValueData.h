@@ -5,8 +5,12 @@
 
 class KeyValueData : public Data
 {
+
+public:
+    virtual ~KeyValueData(){}
+    
 protected:
-    uint32_t valueLen;  // 42억
+    //uint32_t valueLen;  // 42억
     std::string value;
     
     bool setValue(std::string value)
@@ -14,8 +18,8 @@ protected:
         if(value.length() > UINT32_MAX)
             return false;
         
-        valueLen = (uint32_t)value.length();
-        value = value;
+        //valueLen = (uint32_t)value.length();
+        this->value = value;
         
         return true;
     }
@@ -26,9 +30,10 @@ protected:
     }
     
     // virtual 함수 구현
-    uint16_t getDataSize()
+    virtual uint16_t getDataSize()
     {
-        return (uint16_t)(sizeof(formatFlag) + sizeof(keyLen) + keyLen + sizeof(valueLen) + valueLen);
+        //return (uint16_t)(sizeof(formatFlag) + sizeof(keyLen) + keyLen + sizeof(valueLen) + valueLen);
+        return (uint16_t)sizeof(KeyValueData);
     }
 };
 

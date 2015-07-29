@@ -9,27 +9,36 @@
 // 1: key/value 데이터포맷이면서 chaining 안함
 // 2: key/value 데이터포맷이면서 chaining 함
 
+
 class Data
 {
 protected:
-    int8_t formatFlag;
-    uint8_t keyLen;
+    int8_t      formatType;
+    //uint8_t     keyLen;
     std::string key;
     
 public:
-    void setFormatFlag(int8_t flag)
+    
+    virtual ~Data(){}
+    
+    bool setFormatType(int8_t type)
     {
-        formatFlag = flag;
+        if(type > 2)
+            return false;
+        
+        formatType = type;
+        
+        return true;
     }
     
-    char getFormatFlag()
+    int8_t getFormatType()
     {
-        return formatFlag;
+        return formatType;
     }
     
     uint8_t getKeyLength()
     {
-        return keyLen;
+        return key.length();
     }
     
     bool setKey(std::string key)
@@ -37,8 +46,8 @@ public:
         if(key.length() > UINT8_MAX)
             return false;
         
-        keyLen = key.length();
-        key = key;
+        //keyLen = key.length();
+        this->key = key;
         return true;
     }
     
