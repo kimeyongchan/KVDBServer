@@ -9,12 +9,15 @@ protected:
     int64_t indBlockAddress;
     
 public:
+    
+    virtual ~DirectoryData(){}
+    
     void setIndBlockAddress(int64_t indBlockAddress)
     {
-        indBlockAddress = indBlockAddress;
+        this->indBlockAddress = indBlockAddress;
     }
     
-    long  getIndBlockAddress()
+    int64_t  getIndBlockAddress()
     {
         return indBlockAddress;
     }
@@ -22,7 +25,9 @@ public:
     // virtual 함수 구현
     uint16_t getDataSize()
     {
-        return (uint16_t)(sizeof(formatFlag) + sizeof(keyLen) + keyLen + sizeof(indBlockAddress));
+       //return (uint16_t)(sizeof(formatFlag) + sizeof(keyLen) + keyLen + sizeof(indBlockAddress));
+        
+        return (uint16_t)sizeof(DirectoryData);
     }
 };
 

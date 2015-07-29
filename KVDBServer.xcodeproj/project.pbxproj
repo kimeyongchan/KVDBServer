@@ -82,6 +82,30 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		39D55BFF1B69140200713BB7 /* Block */ = {
+			isa = PBXGroup;
+			children = (
+				6FE490831B68ABF600B6E52C /* Block.cpp */,
+				6FE490841B68ABF600B6E52C /* Block.h */,
+			);
+			name = Block;
+			sourceTree = "<group>";
+		};
+		39D55C001B69140A00713BB7 /* Data */ = {
+			isa = PBXGroup;
+			children = (
+				6FE490851B68ABF600B6E52C /* Data.cpp */,
+				6FE490861B68ABF600B6E52C /* Data.h */,
+				6FE490871B68ABF600B6E52C /* DirectoryData.cpp */,
+				6FE490881B68ABF600B6E52C /* DirectoryData.h */,
+				6FE4908B1B68ABF600B6E52C /* KeyValueChainingData.cpp */,
+				6FE4908C1B68ABF600B6E52C /* KeyValueChainingData.h */,
+				6FE4908D1B68ABF600B6E52C /* KeyValueData.cpp */,
+				6FE4908E1B68ABF600B6E52C /* KeyValueData.h */,
+			);
+			name = Data;
+			sourceTree = "<group>";
+		};
 		6FE4906F1B68AB9600B6E52C = {
 			isa = PBXGroup;
 			children = (
@@ -134,16 +158,8 @@
 		6FE490A91B68AC0A00B6E52C /* CommonData */ = {
 			isa = PBXGroup;
 			children = (
-				6FE490831B68ABF600B6E52C /* Block.cpp */,
-				6FE490841B68ABF600B6E52C /* Block.h */,
-				6FE490851B68ABF600B6E52C /* Data.cpp */,
-				6FE490861B68ABF600B6E52C /* Data.h */,
-				6FE490871B68ABF600B6E52C /* DirectoryData.cpp */,
-				6FE490881B68ABF600B6E52C /* DirectoryData.h */,
-				6FE4908B1B68ABF600B6E52C /* KeyValueChainingData.cpp */,
-				6FE4908C1B68ABF600B6E52C /* KeyValueChainingData.h */,
-				6FE4908D1B68ABF600B6E52C /* KeyValueData.cpp */,
-				6FE4908E1B68ABF600B6E52C /* KeyValueData.h */,
+				39D55C001B69140A00713BB7 /* Data */,
+				39D55BFF1B69140200713BB7 /* Block */,
 				6FE490971B68ABF600B6E52C /* RequestInfo.h */,
 				6FE490C41B69170500B6E52C /* SuperBlock.cpp */,
 				6FE490C51B69170500B6E52C /* SuperBlock.h */,

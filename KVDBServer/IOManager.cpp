@@ -50,7 +50,7 @@ void IOManager::ProcessInsert(InsertRequestInfo* reqInfo)
                     break;
                 else
                 {
-                    if(data->ifFolder()== true)
+                    if(data->getFormatFlag()== true)
                         block = diskIo->find(data->getValue());
                     else // 실제 keyvalue 데이터가 있다는 뜻이기 때문에 insert 불가능하다
                         return -1;
