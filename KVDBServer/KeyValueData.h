@@ -32,7 +32,7 @@ protected:
     // virtual 함수 구현
     virtual uint16_t getDataSize()
     {
-         return (uint16_t)( sizeof(formatType) + key.size() + value.size() );
+         return (uint16_t)( sizeof(formatType) + sizeof(int8_t) +key.size() + sizeof(int32_t) + value.size() );
     }
 };
 
