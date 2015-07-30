@@ -4,8 +4,9 @@
 
 #include <map>
 
-class Data;
+#define BLOCK_FIRST_FREE_SPACE 8192 - (sizeof(indirectionCnt)+ sizeof(freeSpace) + sizeof(chainingAddress))
 
+class Data;
 class Block
 {
 
@@ -30,7 +31,7 @@ private:
 public:
     Block()
     {
-        freeSpace = 8192 - (sizeof(indirectionCnt)+ sizeof(freeSpace) + sizeof(chainingAddress));
+        freeSpace = BLOCK_FIRST_FREE_SPACE;
     }
     
     

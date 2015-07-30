@@ -25,9 +25,7 @@ public:
     // virtual 함수 구현
     uint16_t getDataSize()
     {
-       //return (uint16_t)(sizeof(formatFlag) + sizeof(keyLen) + keyLen + sizeof(indBlockAddress));
-        
-        return (uint16_t)sizeof(DirectoryData);
+       return (uint16_t)( sizeof(formatType) + key.size() + sizeof(indBlockAddress));
     }
 };
 
