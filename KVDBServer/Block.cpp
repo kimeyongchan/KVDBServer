@@ -38,12 +38,17 @@ bool Block::deleteData(int16_t offset)
     uint16_t dataSize = data->getDataSize();
     
     
+    uint16_t freeSpaceSize = freeSpace +dataSize;
+    
+    if(BLOCK_FIRST_FREE_SPACE < freeSpaceSize)
+        return false; // 데이터 삭제 하면 프리사이즈값이 오류남...
+    
+    
     indirectionDataMap.erase(iter);
-    freeSpace   += dataSize;
+    freeSpace += dataSize;
     decreaseIndirctionCnt();
     
     return true;
-    
 }
 
 Data* Block::getData(int16_t offset)
