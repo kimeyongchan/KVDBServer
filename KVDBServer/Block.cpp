@@ -20,7 +20,7 @@ bool Block::insertData(int16_t offset, Data* data)
     
     
     indirectionDataMap.insert(std::pair<int16_t, Data*>(offset,data));
-    freeSpace   -= dataSize;
+    freeSpace   -= (dataSize+sizeof(int16_t)) ;
     increaseIndirectionCnt();
     
     return true;
@@ -45,7 +45,7 @@ bool Block::deleteData(int16_t offset)
     
     
     indirectionDataMap.erase(iter);
-    freeSpace += dataSize;
+    freeSpace += (dataSize + sizeof(int16_t));// indirection 2
     decreaseIndirctionCnt();
     
     return true;
