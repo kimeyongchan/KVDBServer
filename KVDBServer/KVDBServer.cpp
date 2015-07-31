@@ -1,9 +1,11 @@
 #include "KVDBServer.h"
 
+#include "Defines.h"
 #include "Network.h"
 #include "RequestInfo.h"
 #include "RequestHandler.h"
 #include "WorkerThread.h"
+#include "DiskManager.h"
 
 #include "Log.h"
 
@@ -42,6 +44,14 @@ bool KVDBServer::Initialize(int workerThreadCount)
 		ErrorLog("Network error");
 		return false;
 	}
+    
+    m_diskManager = new DiskManager();
+    if (m_diskManager->initialize(KVDB_PATH, BLOCK_SIZE, DISK_SIZE) == false)
+    {
+        ErrorLog("diskManager error");
+        return false;
+    }
+    
     
     m_workerThreadCount = workerThreadCount;
 

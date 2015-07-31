@@ -11,16 +11,14 @@ bool Block::insertData(int16_t offset, Data* data)
     
     uint16_t dataSize = data->getDataSize();
   
-
     if(freeSpace < dataSize)
         return false;
     
-    if(indirectionDataMap.find(offset) != indirectionDataMap.end())  // insert할 키 이미 있으면 실제 값 리턴 없으면 end() 리턴
+    if(getData(offset) == NULL)  // insert할 키 이미 있으면 실제 값 리턴 없으면 end() 리턴
         return false;
     
-    
-    indirectionDataMap.insert(std::pair<int16_t, Data*>(offset,data));
-    freeSpace   -= (dataSize+sizeof(int16_t)) ;
+    indirectionDataMap.insert(std::pair<int16_t, Data*>(offset, data));
+    freeSpace -= (dataSize + sizeof(int16_t));
     increaseIndirectionCnt();
     
     return true;
@@ -61,7 +59,3 @@ Data* Block::getData(int16_t offset)
     
     return iter->second;
 }
-
-
-
-

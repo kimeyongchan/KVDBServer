@@ -6,6 +6,7 @@
 class Network;
 class WorkerThread;
 class RequestInfo;
+class DiskManager;
 class Log;
 
 class KVDBServer
@@ -32,6 +33,7 @@ private:
 	Network* m_network;
 	Log* m_log;
 	WorkerThread* m_workerThreadArray;
+    DiskManager* m_diskManager;
     int m_workerThreadCount;
 };
 

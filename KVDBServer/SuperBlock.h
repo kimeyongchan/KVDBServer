@@ -4,18 +4,37 @@
 #include <cstdInt>
 #include <cstdlib>
 
+class Block;
+
 class SuperBlock
 {
 private:
-    int8_t blockSize;
-    int64_t blockCount;
-    int64_t rootBlockAddress;
+    uint16_t blockSize;
+    uint64_t blockCount;
     char* usingBlockBitArray;
+    int64_t rootBlockAddress;
+    Block* rootBlock;
     
 public:
-    void setBlockSize(int8_t blockSize)
+    
+    ~SuperBlock()
+    {
+        delete usingBlockBitArray;
+    }
+    
+    uint16_t getBlockSize()
+    {
+        return blockSize;
+    }
+    
+    void setBlockSize(uint16_t blockSize)
     {
         this->blockSize = blockSize;
+    }
+    
+    int64_t getBlockCount()
+    {
+        return blockCount;
     }
     
     void setBlockCount(int64_t blockCount)
@@ -23,6 +42,11 @@ public:
         this->blockCount = blockCount;
     }
     
+    int64_t getRootBlockAddress()
+    {
+        return rootBlockAddress;
+    }
+
     void setRootBlockAddress(int64_t rootBlockAddress)
     {
         this->rootBlockAddress = rootBlockAddress;
@@ -31,6 +55,21 @@ public:
     void allocateUsingBlockBitArray(int arrayLen)
     {
         usingBlockBitArray = (char*)malloc(sizeof(char) * arrayLen);
+    }
+    
+    char* getUsingBlockBitArray()
+    {
+        return usingBlockBitArray;
+    }
+    
+    void setRootBlock(Block* block)
+    {
+        rootBlock = block;
+    }
+    
+    Block* getRootBlock()
+    {
+        return rootBlock;
     }
 };
 

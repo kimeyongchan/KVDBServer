@@ -22,6 +22,7 @@
 		6FE490A71B68ABF600B6E52C /* WorkerThread.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6FE4909A1B68ABF600B6E52C /* WorkerThread.cpp */; };
 		6FE490C31B69146B00B6E52C /* DiskManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6FE490C11B69146B00B6E52C /* DiskManager.cpp */; };
 		6FE490C61B69170500B6E52C /* SuperBlock.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6FE490C41B69170500B6E52C /* SuperBlock.cpp */; };
+		6FE490CC1B6BD89100B6E52C /* Disk.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6FE490CA1B6BD89100B6E52C /* Disk.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -69,6 +70,9 @@
 		6FE490C21B69146B00B6E52C /* DiskManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DiskManager.h; sourceTree = "<group>"; };
 		6FE490C41B69170500B6E52C /* SuperBlock.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SuperBlock.cpp; sourceTree = "<group>"; };
 		6FE490C51B69170500B6E52C /* SuperBlock.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SuperBlock.h; sourceTree = "<group>"; };
+		6FE490C81B69F75800B6E52C /* Defines.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Defines.h; sourceTree = "<group>"; };
+		6FE490CA1B6BD89100B6E52C /* Disk.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Disk.cpp; sourceTree = "<group>"; };
+		6FE490CB1B6BD89100B6E52C /* Disk.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Disk.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -163,6 +167,7 @@
 				6FE490971B68ABF600B6E52C /* RequestInfo.h */,
 				6FE490C41B69170500B6E52C /* SuperBlock.cpp */,
 				6FE490C51B69170500B6E52C /* SuperBlock.h */,
+				6FE490C81B69F75800B6E52C /* Defines.h */,
 			);
 			name = CommonData;
 			sourceTree = "<group>";
@@ -179,6 +184,8 @@
 			children = (
 				6FE490C11B69146B00B6E52C /* DiskManager.cpp */,
 				6FE490C21B69146B00B6E52C /* DiskManager.h */,
+				6FE490CA1B6BD89100B6E52C /* Disk.cpp */,
+				6FE490CB1B6BD89100B6E52C /* Disk.h */,
 			);
 			name = Disk;
 			sourceTree = "<group>";
@@ -252,6 +259,7 @@
 				6FE490C31B69146B00B6E52C /* DiskManager.cpp in Sources */,
 				6FE490A51B68ABF600B6E52C /* RequestHandler.cpp in Sources */,
 				6FE4909D1B68ABF600B6E52C /* Data.cpp in Sources */,
+				6FE490CC1B6BD89100B6E52C /* Disk.cpp in Sources */,
 				6FE490A11B68ABF600B6E52C /* KeyValueData.cpp in Sources */,
 				6FE4909E1B68ABF600B6E52C /* DirectoryData.cpp in Sources */,
 				6FE490A31B68ABF600B6E52C /* Log.cpp in Sources */,
