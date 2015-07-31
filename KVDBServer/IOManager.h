@@ -13,10 +13,10 @@ public:
 	~IOManager();
 
 public:
-    void ProcessInsert(InsertRequestInfo* reqInfo);
-    void ProcessInsert(InsertDirectoryRequestInfo* reqInfo);
-	void ProcessFind(FindRequestInfo* reqInfo);
-	void ProcessDelete(DeleteRequestInfo* reqInfo);
+    void processInsert(InsertRequestInfo* reqInfo);
+    void processInsert(InsertDirectoryRequestInfo* reqInfo);
+	void processFind(FindRequestInfo* reqInfo);
+	void processDelete(DeleteRequestInfo* reqInfo);
 
 private:
 

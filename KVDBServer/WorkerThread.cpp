@@ -40,28 +40,28 @@ void WorkerThread::Run()
                 case INSERT_REQUEST:
                 {
                     InsertRequestInfo * iri = (InsertRequestInfo*)requestInfo;
-                    m_ioMgr->ProcessInsert(iri);
+                    m_ioMgr->processInsert(iri);
                     delete iri;
                     break;
                 }
                 case INSERT_DIRECTORY_REQUEST:
                 {
                     InsertDirectoryRequestInfo * idri = (InsertDirectoryRequestInfo*)requestInfo;
-                    m_ioMgr->ProcessInsert(idri);
+                    m_ioMgr->processInsert(idri);
                     delete idri;
                     break;
                 }
                 case FIND_REQUEST:
                 {
                     FindRequestInfo * fri = (FindRequestInfo*)requestInfo;
-                    m_ioMgr->ProcessFind(fri);
+                    m_ioMgr->processFind(fri);
                     delete fri;
                     break;
                 }
                 case DELETE_REQUEST:
                 {
                     DeleteRequestInfo * dri = (DeleteRequestInfo*)requestInfo;
-                    m_ioMgr->ProcessDelete(dri);
+                    m_ioMgr->processDelete(dri);
                     delete dri;
                     break;
                 }
