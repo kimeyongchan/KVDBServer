@@ -13,16 +13,13 @@ IOManager::~IOManager()
 }
 
 
-void IOManager::ProcessInsert(InsertRequestInfo* reqInfo)
+void IOManager::processInsert(InsertRequestInfo* reqInfo)
 {
     
     DebugLog("INSERT - key : %s, value : %s ", reqInfo->key.c_str(), reqInfo->value.c_str());
     
     
-    
-    
     /*
-    
     
     // 먼저 있는지 확인한다.
     map<string, Block> buffCachInsertValMap;
@@ -39,7 +36,11 @@ void IOManager::ProcessInsert(InsertRequestInfo* reqInfo)
         NamedData* childNd = namedCache->findND(c, nd);
         
         if(childNd == NULL)// 없을때
-        {   // 하드에서 직접 중간 블럭부터 끝블럭까지 실제로 있는지 확인해야한다.
+        {
+            // 버퍼에서 한번 있는지 확인한다.
+            
+            
+            // 하드에서 직접 중간 블럭부터 끝블럭까지 실제로 있는지 확인해야한다.
             
             block = diskIo->find(nd->ba);
             while(block != NULL)
@@ -54,7 +55,6 @@ void IOManager::ProcessInsert(InsertRequestInfo* reqInfo)
                         block = diskIo->find(data->getValue());
                     else // 실제 keyvalue 데이터가 있다는 뜻이기 때문에 insert 불가능하다
                         return -1;
-                    
                 }
                 
             }
@@ -166,7 +166,7 @@ void IOManager::ProcessInsert(InsertRequestInfo* reqInfo)
 }
 
 
-void IOManager::ProcessInsert(InsertDirectoryRequestInfo* reqInfo)
+void IOManager::processInsert(InsertDirectoryRequestInfo* reqInfo)
 {
     
     DebugLog("INSERT_DIRECTORY - key : %s", reqInfo->key.c_str());
@@ -174,7 +174,7 @@ void IOManager::ProcessInsert(InsertDirectoryRequestInfo* reqInfo)
 }
 
 
-void IOManager::ProcessFind(FindRequestInfo* reqInfo)
+void IOManager::processFind(FindRequestInfo* reqInfo)
 {
     
     DebugLog("FIND - key : %s", reqInfo->key.c_str());
@@ -198,7 +198,7 @@ void IOManager::ProcessFind(FindRequestInfo* reqInfo)
 }
 
 
-void IOManager::ProcessDelete(DeleteRequestInfo* reqInfo)
+void IOManager::processDelete(DeleteRequestInfo* reqInfo)
 {
     
     DebugLog("DELETE - key : %s", reqInfo->key.c_str());
