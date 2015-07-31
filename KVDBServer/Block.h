@@ -29,7 +29,7 @@ private:
     uint16_t  freeSpace ;       //  블럭 잔여량  (8k = 8192byte)
     int64_t   chainingAddress;  // 블럭 체이닝 주소
     
-    std::map<uint16_t, IndirectionData> indirectionDataMap; //  <인디렉션넘버, indirectionData>
+    std::map<uint16_t, IndirectionData*> indirectionDataMap; //  <인디렉션넘버, indirectionData>
     
     void increaseIndirectionCnt()
     {
@@ -83,7 +83,7 @@ public:
     bool checkOffset(uint16_t offset)
     {
         for(auto iter:indirectionDataMap)
-            if( iter.second.offset == offset)
+            if( iter.second->offset == offset)
                 return true;
         
         return false;
@@ -93,7 +93,7 @@ public:
     bool deleteData(int16_t offset);
     Data* getData(int16_t offset);
     
-    const std::map<uint16_t, IndirectionData> getIndirectionDataMap() const
+    const std::map<uint16_t, IndirectionData*> getIndirectionDataMap() const
     {
         return indirectionDataMap;
     }
