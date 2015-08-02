@@ -4,7 +4,7 @@
 #include "KeyValueData.h"
 #include "KeyValueChainingData.h"
 
-bool Block::insertData(uint16_t key, uint16_t offset, Data* data)
+bool Block::insertData(uint16_t idx, uint16_t offset, Data* data)
 {
     if(data == NULL)
         return false;

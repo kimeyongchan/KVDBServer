@@ -51,7 +51,7 @@ public:
         return true;
     }
     
-    std::string getKey()
+    std::string getKey() const
     {
         return key;
     }

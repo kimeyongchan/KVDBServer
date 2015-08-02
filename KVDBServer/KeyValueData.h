@@ -13,7 +13,6 @@ protected:
     //uint32_t valueLen;  // 42억
     std::string value;
     
-    
 public:
     bool setValue(std::string value)
     {
@@ -26,7 +25,7 @@ public:
         return true;
     }
     
-    std::string getValue()
+    std::string getValue() const
     {
         return value;
     }
