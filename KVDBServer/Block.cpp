@@ -43,8 +43,6 @@ bool Block::insertData(uint16_t key, uint16_t offset, Data* data)
     increaseIndirectionCnt();
     
     return true;
-    
-    return true;
 }
 
 bool Block::deleteData(uint16_t idx)
