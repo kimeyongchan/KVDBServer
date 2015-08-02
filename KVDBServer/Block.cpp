@@ -4,7 +4,7 @@
 #include "KeyValueData.h"
 #include "KeyValueChainingData.h"
 
-bool Block::insertData(int16_t offset, Data* data)
+bool Block::insertData(uint16_t key, uint16_t offset, Data* data)
 {
     if(data == NULL)
         return false;
@@ -45,7 +45,7 @@ bool Block::insertData(int16_t offset, Data* data)
     return true;
 }
 
-bool Block::deleteData(int16_t idx)
+bool Block::deleteData(uint16_t idx)
 {
     auto iter = indirectionDataMap.find(idx);
     
@@ -75,7 +75,7 @@ bool Block::deleteData(int16_t idx)
     return true;
 }
 
-Data* Block::getData(int16_t idx)
+Data* Block::getData(uint16_t idx)
 {
     auto iter = indirectionDataMap.find(idx);
     

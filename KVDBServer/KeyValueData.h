@@ -13,6 +13,8 @@ protected:
     //uint32_t valueLen;  // 42억
     std::string value;
     
+    
+public:
     bool setValue(std::string value)
     {
         if(value.length() > UINT32_MAX)

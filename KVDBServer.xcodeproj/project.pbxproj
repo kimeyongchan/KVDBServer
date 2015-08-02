@@ -22,7 +22,8 @@
 		6FE490A71B68ABF600B6E52C /* WorkerThread.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6FE4909A1B68ABF600B6E52C /* WorkerThread.cpp */; };
 		6FE490C31B69146B00B6E52C /* DiskManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6FE490C11B69146B00B6E52C /* DiskManager.cpp */; };
 		6FE490C61B69170500B6E52C /* SuperBlock.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6FE490C41B69170500B6E52C /* SuperBlock.cpp */; };
-		6FE490CC1B6BD89100B6E52C /* Disk.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6FE490CA1B6BD89100B6E52C /* Disk.cpp */; };
+		6FE490CF1B6CCD2100B6E52C /* LogFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6FE490CD1B6CCD2100B6E52C /* LogFile.cpp */; };
+		6FE490D31B6D0D1500B6E52C /* LogBuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6FE490D11B6D0D1500B6E52C /* LogBuffer.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -71,8 +72,10 @@
 		6FE490C41B69170500B6E52C /* SuperBlock.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SuperBlock.cpp; sourceTree = "<group>"; };
 		6FE490C51B69170500B6E52C /* SuperBlock.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SuperBlock.h; sourceTree = "<group>"; };
 		6FE490C81B69F75800B6E52C /* Defines.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Defines.h; sourceTree = "<group>"; };
-		6FE490CA1B6BD89100B6E52C /* Disk.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Disk.cpp; sourceTree = "<group>"; };
-		6FE490CB1B6BD89100B6E52C /* Disk.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Disk.h; sourceTree = "<group>"; };
+		6FE490CD1B6CCD2100B6E52C /* LogFile.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LogFile.cpp; sourceTree = "<group>"; };
+		6FE490CE1B6CCD2100B6E52C /* LogFile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LogFile.h; sourceTree = "<group>"; };
+		6FE490D11B6D0D1500B6E52C /* LogBuffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LogBuffer.cpp; sourceTree = "<group>"; };
+		6FE490D21B6D0D1500B6E52C /* LogBuffer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LogBuffer.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -129,6 +132,7 @@
 		6FE4907A1B68AB9600B6E52C /* KVDBServer */ = {
 			isa = PBXGroup;
 			children = (
+				6FE490D01B6D0CFF00B6E52C /* Log */,
 				6FE490AC1B68AC3900B6E52C /* IoManager */,
 				6FE490AB1B68AC2100B6E52C /* Disk */,
 				6FE490AA1B68AC1700B6E52C /* Cache */,
@@ -184,8 +188,6 @@
 			children = (
 				6FE490C11B69146B00B6E52C /* DiskManager.cpp */,
 				6FE490C21B69146B00B6E52C /* DiskManager.h */,
-				6FE490CA1B6BD89100B6E52C /* Disk.cpp */,
-				6FE490CB1B6BD89100B6E52C /* Disk.h */,
 			);
 			name = Disk;
 			sourceTree = "<group>";
@@ -197,6 +199,17 @@
 				6FE4908A1B68ABF600B6E52C /* IOManager.h */,
 			);
 			name = IoManager;
+			sourceTree = "<group>";
+		};
+		6FE490D01B6D0CFF00B6E52C /* Log */ = {
+			isa = PBXGroup;
+			children = (
+				6FE490CD1B6CCD2100B6E52C /* LogFile.cpp */,
+				6FE490CE1B6CCD2100B6E52C /* LogFile.h */,
+				6FE490D11B6D0D1500B6E52C /* LogBuffer.cpp */,
+				6FE490D21B6D0D1500B6E52C /* LogBuffer.h */,
+			);
+			name = Log;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -259,7 +272,6 @@
 				6FE490C31B69146B00B6E52C /* DiskManager.cpp in Sources */,
 				6FE490A51B68ABF600B6E52C /* RequestHandler.cpp in Sources */,
 				6FE4909D1B68ABF600B6E52C /* Data.cpp in Sources */,
-				6FE490CC1B6BD89100B6E52C /* Disk.cpp in Sources */,
 				6FE490A11B68ABF600B6E52C /* KeyValueData.cpp in Sources */,
 				6FE4909E1B68ABF600B6E52C /* DirectoryData.cpp in Sources */,
 				6FE490A31B68ABF600B6E52C /* Log.cpp in Sources */,
@@ -270,6 +282,8 @@
 				6FE490A61B68ABF600B6E52C /* ResponseHandler.cpp in Sources */,
 				6FE490A41B68ABF600B6E52C /* Network.cpp in Sources */,
 				6FE490A71B68ABF600B6E52C /* WorkerThread.cpp in Sources */,
+				6FE490CF1B6CCD2100B6E52C /* LogFile.cpp in Sources */,
+				6FE490D31B6D0D1500B6E52C /* LogBuffer.cpp in Sources */,
 				6FE4909C1B68ABF600B6E52C /* Block.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -56,6 +56,11 @@ public:
         return indirectionCnt;
     }
     
+    void setIndirectionCnt(uint16_t indCnt)
+    {
+        indirectionCnt = indCnt;
+    }
+    
     void calculateFreeSpace(uint16_t dataSize, uint8_t offsetSize, bool isIncrease)
     {
         if(isIncrease == true)
@@ -67,6 +72,11 @@ public:
     uint16_t getFreeSpace() const
     {
         return freeSpace;
+    }
+    
+    void setFreeSpace(uint16_t freeSpace)
+    {
+        this->freeSpace = freeSpace;
     }
     
     
@@ -89,9 +99,9 @@ public:
         return false;
     }
     
-    bool insertData(int16_t offset, Data* data);
-    bool deleteData(int16_t offset);
-    Data* getData(int16_t offset);
+    bool insertData(uint16_t key, uint16_t offset, Data* data);
+    bool deleteData(uint16_t offset);
+    Data* getData(uint16_t offset);
     
     const std::map<uint16_t, IndirectionData*> getIndirectionDataMap() const
     {
