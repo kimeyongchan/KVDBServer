@@ -364,11 +364,11 @@ bool DiskManager::writeBlock(uint64_t blockAddress, const Block *block)
     memcpy(pblockArray, &nextBlockAddress, sizeof(nextBlockAddress));
     pblockArray += sizeof(nextBlockAddress);
     
-    const std::map<uint16_t, IndirectionData*> map = block->getIndirectionDataMap();
+    const std::map<uint16_t, IndirectionData*>* map = block->getIndirectionDataMap();
     
     std::map<uint16_t, IndirectionData*>::const_iterator itr;
     
-    for(itr = map.begin(); itr != map.end(); itr++)
+    for(itr = map->begin(); itr != map->end(); itr++)
     {
         uint16_t key = itr->first;
         IndirectionData* indData = itr->second;
