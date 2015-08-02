@@ -51,6 +51,11 @@ public:
         return true;
     }
     
+    std::string getKey() const
+    {
+        return key;
+    }
+    
     virtual uint16_t getDataSize() = 0;
 };
 

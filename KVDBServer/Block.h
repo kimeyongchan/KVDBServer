@@ -27,9 +27,11 @@ private:
     
     uint16_t  indirectionCnt;   // 0~65535개 , 인다이렉션 개수
     uint16_t  freeSpace ;       //  블럭 잔여량  (8k = 8192byte)
-    int64_t   chainingAddress;  // 블럭 체이닝 주소
+    uint64_t   chainingAddress;  // 블럭 체이닝 주소
     
     std::map<uint16_t, IndirectionData*> indirectionDataMap; //  <인디렉션넘버, indirectionData>
+    
+ 
     
     void increaseIndirectionCnt()
     {
@@ -50,6 +52,14 @@ public:
         indirectionDataMap.clear();
     }
     
+    void setIndirectionCnt(uint16_t indirectionCnt)
+    {
+        this->indirectionCnt = indirectionCnt;
+    }
+    void setFreeSpace(uint16_t freeSpace)
+    {
+        this->freeSpace = freeSpace;
+    }
     
     uint16_t getIndirectionCnt() const
     {
@@ -70,12 +80,12 @@ public:
     }
     
     
-    void setChainingAddress(int64_t address)
+    void setChainingAddress(uint64_t address)
     {
         chainingAddress = address;
     }
     
-    int64_t getChaingAddress() const
+    uint64_t getChaingAddress() const
     {
         return chainingAddress;
     }
@@ -89,13 +99,13 @@ public:
         return false;
     }
     
-    bool insertData(int16_t offset, Data* data);
-    bool deleteData(int16_t offset);
-    Data* getData(int16_t offset);
+    bool insertData(uint16_t idx, uint16_t offset, Data* data);
+    bool deleteData(uint16_t offset);
+    Data* getData(uint16_t offset);
     
-    const std::map<uint16_t, IndirectionData*> getIndirectionDataMap() const
+    const std::map<uint16_t, IndirectionData*>* getIndirectionDataMap() const
     {
-        return indirectionDataMap;
+        return &indirectionDataMap;
     }
     
     
