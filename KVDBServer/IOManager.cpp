@@ -1,7 +1,11 @@
 #include "IOManager.h"
-
 #include "RequestInfo.h"
 #include "Log.h"
+#include "Block.h"
+#include "DirectoryData.h"
+#include "KVDBServer.h"
+#include <sstream>
+#include "Defines.h"
 
 IOManager::IOManager()
 {
@@ -13,86 +17,55 @@ IOManager::~IOManager()
 }
 
 
-void IOManager::processInsert(InsertRequestInfo* reqInfo)
+int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
 {
     
     DebugLog("INSERT - key : %s, value : %s ", reqInfo->key.c_str(), reqInfo->value.c_str());
-    
+   
     
     /*
-    
     // 먼저 있는지 확인한다.
-    map<string, Block> buffCachInsertValMap;
+    //map<string, Block> buffCachInsertValMap;
     
-    string component = reqInfo->component;
-    string[] components = component.split("/"); //    a/b/c 를 /를 구분자로 해서 배열로 갖고 있겠음
+    std::vector<std::string> components = split(reqInfo->key, '/');
     
-    NamedData* nd = rootNamedData;
-    Block* block;
+    NamedData* nd = namedCache->getRootNamedData();
     
-    for( string c : components )
+    for (int i=0; i < components.size(); ++i)
     {
+        std::string c = components[i];
         
-        NamedData* childNd = namedCache->findND(c, nd);
+        NamedData* childNd = namedCache->findND(c, nd); // c: 찾으려는 컴퍼넌트 , nd: 부모 NamedData
+        
         
         if(childNd == NULL)// 없을때
         {
-            // 버퍼에서 한번 있는지 확인한다.
+            int8_t result = checkBufferCacheAndDisk(nd->getIndBlockAddress(),i, components.size()-1);
             
-            
-            // 하드에서 직접 중간 블럭부터 끝블럭까지 실제로 있는지 확인해야한다.
-            
-            block = diskIo->find(nd->ba);
-            while(block != NULL)
-            {
-                Data* data = block->find(nextComponent);
-                
-                if(data == NULL) //data 가  실제 키벨류를 가진 데이터인지 다음 블럭을 가리키는 데이터인지는 몰라도 정보가 없으므로 insert 가능하다.
-                    break;
-                else
-                {
-                    if(data->getFormatFlag()== true)
-                        block = diskIo->find(data->getValue());
-                    else // 실제 keyvalue 데이터가 있다는 뜻이기 때문에 insert 불가능하다
-                        return -1;
-                }
-                
-            }
-            
-            
-            
-        }else // 끝까지 다 있을때
-        {
-            if(c == lastComponent) // 최종 BlockAdress 를 이용해 BufferChach에서 찾는다.
-            {
-                
-                
-                int64_t ba = ibaToBa(nd->indirectionAdress);
-                
-                Block* block = bufferCache->findBlock(ba, c);
-                
-                if(block == NULL)
-                    block = bufferCache->findBlockByList(key); // search all
-                
-                if(block == NULL)
-                    block = diskIo->findBlock(ba);
-                
-                if(block !=NULL) // 이미 있으므로 리턴
-                    return -1;
-                
-            }
-            
-            
+            if(result <0)
+                return result;
+            else
+                break;
         }
         
-        nd = childNd;
         
-    }// for문 끝
+        if(i != components.size()-1)  // 있을때, 중간 노드 일때
+        {
+            nd = childNd;
+            continue;
+        }
+
+        // 있을때 맨 마지막일 때
+        int8_t result =checkBufferCacheAndDisk(childNd->getIndBlockAddress(),  i, components.size()-1);
+        
+        if(result <0)
+            return result;
+        else
+            break;
+        
+    }// for
     
-    
-    
-    
-    
+
     
     // 위에서 하드에 없는지 확인했으므로 실제로 넣는 작업한다.
     result = logBuffer->insert(reqInfo);
@@ -163,13 +136,17 @@ void IOManager::processInsert(InsertRequestInfo* reqInfo)
     */
     // return send success
     
+    return 0;
+    
 }
 
 
-void IOManager::processInsert(InsertDirectoryRequestInfo* reqInfo)
+int8_t IOManager::processInsert(InsertDirectoryRequestInfo* reqInfo)
 {
     
     DebugLog("INSERT_DIRECTORY - key : %s", reqInfo->key.c_str());
+    
+    return 0;
     
 }
 
@@ -212,3 +189,73 @@ void IOManager::processDelete(DeleteRequestInfo* reqInfo)
      */
     
 }
+
+
+std::vector<std::string> IOManager::split(const std::string &s, char delim)
+{
+    std::vector<std::string> elems;
+    std::stringstream ss(s);
+    std::string item;
+    
+    while (std::getline(ss, item, delim))
+        elems.push_back(item);
+    
+    return elems;
+}
+/*
+uint64_t IOManager::ibaToBa(uint64_t iba)
+{
+    uint64_t rootBlockadr= KVDBServer::getInstance()->cacheMgr->getSuperBlock()->getRootBlockAddress();
+    
+    uint64_t distance = (iba - rootBlockadr) % BLOCK_SIZE;
+    
+    return iba - distance;
+}
+
+uint16_t IOManager::ibaToOffsetIdx(uint64_t iba, uint64_t ba)
+{
+    uint8_t headerSize = Block::getBlockHeaderSize();
+    uint16_t offsetIdx = (iba -(ba + headerSize) ) /2;
+    return offsetIdx;
+}
+
+
+int8_t IOManager::checkBufferCacheAndDisk(uint64_t indirectionBa,  int curIdx, int lastIdx)
+{
+    uint64_t ba = ibaToBa(indirectionBa);
+    uint16_t offsetIdx =ibaToOffsetIdx(indirectionBa, ba);
+    
+    
+    Block* block = bufferCache->find(ba);
+    Block readBlock;
+    if(block == NULL)
+    {
+        if(KVDBServer::getInstance()->m_diskManager->readBlock(blockAdr, &readBlock)== false)
+            return -1; // 블럭이 없다.
+        
+        block = &readBlock;
+    }
+    
+    
+    Data* data = block->getData(offsetIdx);
+    if(curIdx != lastIdx)  // 중간 데이터 일때
+    {
+        if(data == NULL)
+            return -2;
+        else
+        {
+            DirectoryData* dirData = (DirectoryData*)data;
+            return checkBufferCacheAndDisk(dirData->getIndBlockAddress(), curIdx +1, lastIdx);
+        }
+        
+    }else // 마지막 데이터 일때
+    {
+        if(data == NULL)
+            return 0; // insert 해도 된다.
+        else
+            return -3; // 값이 이미 있음 insert error
+    }
+}
+
+*/
+
