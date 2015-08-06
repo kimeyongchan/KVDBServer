@@ -7,7 +7,7 @@
 //
 
 #include "LogBuffer.h"
-#include "RequestInfo.h"
+
 #include "Log.h"
 
 LogBuffer::LogBuffer()
@@ -21,26 +21,19 @@ bool LogBuffer::initialize()
     return true;
 }
 
-const char* LogBuffer::sendLogToLogFile()
+const char* LogBuffer::readLogBuffer()
 {
     return logbufferStorage.c_str();
 }
 
-bool LogBuffer::saveRequestInfo(const RequestInfo* reqInfo)
+bool LogBuffer::saveLog(bool isAllocateBlock, bool isInsert, int64_t IndBlockAddress, uint16_t offset, const Data* data)
 {
-    std::string reqInfoString = unParsing(reqInfo);
-    
-    if(reqInfoString.empty())
-        return false;
-
-    logbufferStorage = logbufferStorage.append(reqInfoString);
-    
     return true;
 }
 
-std::string LogBuffer::unParsing(const RequestInfo* reqInfo)
+const char* LogBuffer::DataToArray(const Data* data)
 {
-    std::string unParsingString = "";
+/*    std::string unParsingString = "";
     
     int type = reqInfo->type;
     
@@ -85,5 +78,6 @@ std::string LogBuffer::unParsing(const RequestInfo* reqInfo)
         ErrorLog("invalid type - %d", type);
     }
     
-    return unParsingString;
+    return unParsingString;*/
+    return NULL;
 }

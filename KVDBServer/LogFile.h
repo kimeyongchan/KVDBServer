@@ -9,18 +9,23 @@
 #ifndef __KVDBServer__LogFile__
 #define __KVDBServer__LogFile__
 
-class RequestInfo;
-
 
 class LogFile
 {
 public:
     LogFile();
     
-    bool initialize();
+    bool initialize(const char* fileName);
     
-    bool writeLogFile(RequestInfo* reqInfo);
-    bool readLogFile(RequestInfo* reqInfo);
+    bool writeLogFile(const char* LogArrary);
+    const char* readLogFile();
+    void clear();
+    
+private:
+    bool createDisk(const char* fileName);
+    
+private:
+    int fd;
 };
 
 #endif /* defined(__KVDBServer__LogFile__) */

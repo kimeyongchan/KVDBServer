@@ -11,6 +11,8 @@
 
 #include <string>
 
+#include "Data.h"
+
 class RequestInfo;
 
 class LogBuffer
@@ -18,11 +20,12 @@ class LogBuffer
 public:
     LogBuffer();
     bool initialize();
-    bool saveRequestInfo(const RequestInfo* reqInfo);
-    const char* sendLogToLogFile();
+    bool saveLog(bool isAllocateBlock, bool isInsert, int64_t IndBlockAddress, uint16_t offset, const Data* data); // not allocate data
+    const char* readLogBuffer();
+    void clear();
     
 private:
-    std::string unParsing(const RequestInfo* reqInfo);
+    const char* DataToArray(const Data* data);
     
 private:
     std::string logbufferStorage;
