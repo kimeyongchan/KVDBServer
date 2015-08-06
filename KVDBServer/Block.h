@@ -52,6 +52,11 @@ public:
         indirectionDataMap.clear();
     }
     
+    static uint8_t getBlockHeaderSize()
+    {
+        return sizeof(indirectionCnt) + sizeof(freeSpace) + sizeof(chainingAddress);
+    }
+    
     void setIndirectionCnt(uint16_t indirectionCnt)
     {
         this->indirectionCnt = indirectionCnt;
@@ -100,8 +105,8 @@ public:
     }
     
     bool insertData(uint16_t idx, uint16_t offset, Data* data);
-    bool deleteData(uint16_t offset);
-    Data* getData(uint16_t offset);
+    bool deleteData(uint16_t idx);
+    Data* getData(uint16_t idx);
     
     const std::map<uint16_t, IndirectionData*>* getIndirectionDataMap() const
     {
