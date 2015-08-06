@@ -9,6 +9,7 @@
 #ifndef __KVDBServer__LogFile__
 #define __KVDBServer__LogFile__
 
+#define MAX_LOG_FILE_SIZE   1024 * 1024 * 500
 
 class LogFile
 {
@@ -17,8 +18,8 @@ public:
     
     bool initialize(const char* fileName);
     
-    bool writeLogFile(const char* LogArrary);
-    const char* readLogFile();
+    bool writeLogFile(int logSize, const char* logArrary);
+    int readLogFile(char** logArray) const;
     void clear();
     
 private:
@@ -26,6 +27,7 @@ private:
     
 private:
     int fd;
+    long logFileSize;
 };
 
 #endif /* defined(__KVDBServer__LogFile__) */

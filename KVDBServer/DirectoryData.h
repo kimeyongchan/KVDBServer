@@ -17,13 +17,13 @@ public:
         this->indBlockAddress = indBlockAddress;
     }
     
-    int64_t  getIndBlockAddress()
+    int64_t getIndBlockAddress() const
     {
         return indBlockAddress;
     }
     
     // virtual 함수 구현
-    uint16_t getDataSize()
+    uint16_t getDataSize() const
     {
        return (uint16_t)( sizeof(formatType) + sizeof(int8_t)/*키사이즈*/ + key.size() + sizeof(indBlockAddress));
     }

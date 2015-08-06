@@ -8,6 +8,8 @@ class WorkerThread;
 class RequestInfo;
 class DiskManager;
 class Log;
+class LogBuffer;
+class LogFile;
 
 class KVDBServer
 {
@@ -34,6 +36,8 @@ private:
 	Log* m_log;
 	WorkerThread* m_workerThreadArray;
     DiskManager* m_diskManager;
+    LogBuffer* m_logBuffer;
+    LogFile* m_logFile;
     int m_workerThreadCount;
 };
 

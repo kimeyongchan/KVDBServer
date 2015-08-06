@@ -30,9 +30,7 @@ bool LogFile::initialize(const char* fileName)
         }
     }
     
-    uint64_t location = lseek(fd, 0, SEEK_END);
-    
-    
+    logFileSize = lseek(fd, 0, SEEK_END);
     
     return true;
 }
@@ -46,22 +44,52 @@ bool LogFile::createDisk(const char* fileName)
         return false;
     }
     
-    return true;
-}
-
-bool LogFile::writeLogFile(const char* LogArrary)
-{
+    if(ftruncate(fd, MAX_LOG_FILE_SIZE) < 0)
+    {
+        ErrorLog("ftruncate error");
+        return false;
+    }
     
     return true;
 }
 
-const char* LogFile::readLogFile()
+bool LogFile::writeLogFile(int logSize, const char* logArray)
 {
+    lseek(fd, 0, SEEK_END);
     
-    return NULL;
+    if(write(fd, logArray, logSize) < 0)
+    {
+        ErrorLog("write block error");
+        return false;
+    }
+    
+    return true;
+}
+
+int LogFile::readLogFile(char** logArray) const
+{
+    int logFileSize = (int)lseek(fd, 0, SEEK_END);
+    
+    lseek(fd, 0, SEEK_SET);
+    
+    if(read(fd, *logArray, logFileSize) < 0)
+    {
+        ErrorLog("read block error");
+        return -1;
+    }
+    return logFileSize;
 }
 
 void LogFile::clear()
 {
+    if(ftruncate(fd, 0) < 0)
+    {
+        ErrorLog("ftruncate error");
+    }
     
+    if(ftruncate(fd, MAX_LOG_FILE_SIZE) < 0)
+    {
+        ErrorLog("ftruncate error");
+    }
 }
+

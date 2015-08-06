@@ -7,6 +7,9 @@
 #include "WorkerThread.h"
 #include "DiskManager.h"
 
+#include "LogBuffer.h"
+#include "LogFile.h"
+
 #include "Log.h"
 
 #define PORT 3307
@@ -25,12 +28,24 @@ void* WorkerThreadFunction(void *data)
 
 bool KVDBServer::Initialize(int workerThreadCount)
 {
-	m_log = new Log();
-	if (m_log->Initialize(".") == false)
-	{
-		return false;
-	}
-
+    m_log = new Log();
+    if (m_log->Initialize(".") == false)
+    {
+        return false;
+    }
+    
+    m_logBuffer = new LogBuffer();
+    if (m_logBuffer->initialize() == false)
+    {
+        return false;
+    }
+    
+    m_logFile = new LogFile();
+    if (m_logFile->initialize(KVDB_LOG_PATH) == false)
+    {
+        return false;
+    }
+    
 	RequestHandler* requestHandler = new RequestHandler();
 	if (requestHandler->Initialize() == false)
 	{

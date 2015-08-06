@@ -30,8 +30,13 @@ public:
         return value;
     }
     
+    uint32_t getValueLen() const
+    {
+        return (uint32_t)value.length();
+    }
+    
     // virtual 함수 구현
-    virtual uint16_t getDataSize()
+    virtual uint16_t getDataSize() const
     {
          return (uint16_t)( sizeof(formatType) + sizeof(int8_t) +key.size() + sizeof(int32_t) + value.size() );
     }
