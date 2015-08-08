@@ -3,6 +3,8 @@
 #include "DirectoryData.h"
 #include "KeyValueData.h"
 #include "KeyValueChainingData.h"
+#include "Defines.h"
+
 
 bool Block::insertData(uint16_t idx, uint16_t offset, Data* data)
 {
@@ -82,8 +84,67 @@ Data* Block::getData(uint16_t idx)
     if(iter == indirectionDataMap.end())
         return NULL; //찾는 데이터
     
-    
     return iter->second->data;
 }
+
+Data* Block::getData(std::string dataKey)
+{
+    for(auto iter = indirectionDataMap.begin(); iter != indirectionDataMap.end(); ++iter )
+    {
+        if(dataKey.compare(iter->second->data->getKey()) ==0)
+            return iter->second->data;
+    }
+    
+    return NULL;
+}
+
+
+uint64_t Block::getIndirectionBlockAdr(uint64_t blockAdr, uint16_t indirectionNumber)
+{
+    uint64_t firstIndBlockAdr = getFirstIndirectionBlockAdr(blockAdr);
+    return firstIndBlockAdr + (indirectionNumber*2);
+    
+}
+
+
+uint16_t Block::getNewOffset(uint16_t dataSize)
+{
+    uint16_t minimumOffset = BLOCK_SIZE;
+    
+    for(auto iter = indirectionDataMap.begin(); iter != indirectionDataMap.end(); ++iter )
+    {
+        if(iter->second->offset < minimumOffset)
+            minimumOffset = iter->second->offset;
+    }
+    
+    uint16_t newOffset = minimumOffset - dataSize;
+    
+    
+    return newOffset;
+}
+
+uint16_t Block::getNewIndirectionNumber()
+{
+    int i =0;
+    for(auto iter = indirectionDataMap.begin(); iter != indirectionDataMap.end(); ++iter )
+    {
+        if(i != iter->first)
+            return i;
+        ++i;
+    }
+    
+    return i;
+}
+
+
+
+
+
+
+
+
+
+
+
 
 

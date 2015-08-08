@@ -30,7 +30,7 @@ private:
     uint64_t   chainingAddress;  // 블럭 체이닝 주소
     
     std::map<uint16_t, IndirectionData*> indirectionDataMap; //  <인디렉션넘버, indirectionData>
-    
+    bool isDirty;
  
     
     void increaseIndirectionCnt()
@@ -50,6 +50,7 @@ public:
         freeSpace = BLOCK_FIRST_FREE_SPACE;
         chainingAddress = NULL;
         indirectionDataMap.clear();
+        isDirty = true;
     }
     
     static uint8_t getBlockHeaderSize()
@@ -95,6 +96,17 @@ public:
         return chainingAddress;
     }
     
+    void setDirty(bool dirtyState)
+    {
+        isDirty = dirtyState;
+    }
+    
+    bool getDirty()
+    {
+        return isDirty;
+    }
+    
+    
     bool checkOffset(uint16_t offset)
     {
         for(auto iter:indirectionDataMap)
@@ -107,6 +119,21 @@ public:
     bool insertData(uint16_t idx, uint16_t offset, Data* data);
     bool deleteData(uint16_t idx);
     Data* getData(uint16_t idx);
+    Data* getData(std::string dataKey);
+    
+    uint64_t getFirstIndirectionBlockAdr(uint64_t blockAdr)
+    {
+        return blockAdr + (sizeof(indirectionCnt)+ sizeof(freeSpace) + sizeof(chainingAddress));
+    }
+    
+    uint64_t getIndirectionBlockAdr(uint64_t blockAdr, uint16_t indirectionNumber);
+    uint16_t getNewOffset(uint16_t dataSize);
+    uint16_t getNewIndirectionNumber();
+    uint16_t getLastIndirectionNumber()
+    {
+        return indirectionDataMap.rbegin()->first;
+    }
+    
     
     const std::map<uint16_t, IndirectionData*>* getIndirectionDataMap() const
     {
