@@ -6,10 +6,13 @@
 class Network;
 class WorkerThread;
 class RequestInfo;
+class XmlData;
 class DiskManager;
 class Log;
 class LogBuffer;
 class LogFile;
+class ClientResponseHandler;
+class MasterResponseHandler;
 
 class KVDBServer
 {
@@ -28,17 +31,18 @@ public:
 	bool Initialize(int workerThreadCount);
 	void Run();
     
-    void SendWorkToWorkerThread(RequestInfo* ri);
+//    void SendWorkToWorkerThread(RequestInfo* ri);
 //    WorkerThread* GetWorkerThreadArray() { return m_workerThreadArray; }
 
 private:
-	Network* m_network;
+	Network* network;
 	Log* m_log;
-	WorkerThread* m_workerThreadArray;
+    XmlData* xmlData;
     DiskManager* m_diskManager;
     LogBuffer* m_logBuffer;
     LogFile* m_logFile;
-    int m_workerThreadCount;
+    ClientResponseHandler* clientResponseHandler;
+    MasterResponseHandler* masterResponseHandler;
 };
 
 #endif //__K_V_D_B_SERVER_H__

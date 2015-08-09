@@ -8,29 +8,62 @@
 #include <sys/types.h>
 #include <sys/event.h>
 #include <sys/time.h>
+#include <deque>
 
 #include "BasicDefines.h"
 
-
+#define MAX_IP_LEN 15
 #define EVENT_BUFFER_SIZE 50
 #define MAX_CONNECT_SIZE 100
 #define RECV_BUF 5000
 
-#define USED 1
-#define UNUSED 0
+class WorkerThread;
 
-struct ConnectInfo
+typedef uint64_t dataSize_t;
+
+struct TempBufferInfo
 {
-	int fd;
-	int8_t used;
+    int tempBufferSize;
+    char* tempBuffer;
 };
 
 
-class ReceiveHandler
+struct ConnectInfo
 {
-public:
-	virtual void Parse(int fd, const char* query, int queryLength) = 0;
+    int fd;
+    int serverModule;
+    char flags;
+    TempBufferInfo tempBufferInfo;
+    std::deque<TempBufferInfo*> tempDataQueue;
+};
 
+
+struct DataPacket
+{
+    ConnectInfo* connectInfo;
+    char* data;
+    int dataSize;
+};
+
+enum SERVER_TYPE
+{
+    SERVER_TYPE_SERVER = 0,
+    SERVER_TYPE_CLIENT,
+};
+
+enum IS_PROCESSING
+{
+    NOT_PROCESSING = 0,
+    PROCESSING,
+};
+
+
+struct NetworkInfo
+{
+    int module;
+    int type;
+    char ip[MAX_IP_LEN + 1];
+    int port;
 };
 
 
@@ -39,38 +72,50 @@ class Network
 public:
 	Network();
 	~Network();
-	bool Initialize(int port, ReceiveHandler* recvHandler);
+	bool Initialize(const NetworkInfo* _networkInfoList, int _networkInfoCount, int _workThreadCount, WorkerThread* _workerThreadArray);
+    bool AddNetworkInfo(const NetworkInfo* _networkInfo);
 	void ProcessEvent();
+    void SendData(const ConnectInfo* connectInfo, const char* data, int dataSize);
 
 private:
-	int CreateTCPServerSocket(unsigned short port);
-	bool AddClientPool(int fd);
+	int CreateTCPServerSocket(const char* ip, unsigned short port);
+    int CreateTCPClientSocket(const char* ip, unsigned short port);
+    bool AddServerTypeNetworkInfo(const NetworkInfo* _networkInfo);
+    bool AddClientTypeNetworkInfo(const NetworkInfo* _networkInfo);
+    
+    
+	ConnectInfo* AddClientPool(int fd);
 	bool DelClientPool(int fd);
 	bool GetClientFd(int fd);
+    
+    void sendDataToWorkerThread(ConnectInfo* const _connectInfo, const char* _data, int _dataSize);
 
 private:
-	int m_sockFd;
-	int m_port;
-	int m_eventFd;
-	int m_clntFd;
-	struct sockaddr_in m_clntaddr;
-	int m_clntaddrLen;
+	int eventFd;
+	int clntFd;
+	struct sockaddr_in clntaddr;
+	int clntaddrLen;
+    int listenSocketCount;
 	
-	ConnectInfo m_connectInfo[MAX_CONNECT_SIZE];
+    ConnectInfo* serverConnectInfoList;
+	ConnectInfo connectInfoList[MAX_CONNECT_SIZE];
 
-	char m_recvBuffer[RECV_BUF];
+	char recvBuffer[RECV_BUF];
+    char tempRecvBuffer[RECV_BUF];
+    
+    int workerThreadCount;
+    WorkerThread* workerThreadArray;
 
-	ReceiveHandler* m_recvHandler;
     
 #if OS_PLATFORM == PLATFORM_LINUX
     
-    struct epoll_event* m_event;
-    struct epoll_event m_connectEvent;
+    struct epoll_event* event;
+    struct epoll_event connectEvent;
     
 #elif OS_PLATFORM == PLATFORM_MAC
     
-    struct kevent* m_event;
-    struct kevent m_connectEvent;
+    struct kevent* event;
+    struct kevent connectEvent;
 #else
     
 #endif

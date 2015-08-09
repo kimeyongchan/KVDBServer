@@ -1,4 +1,4 @@
-#include "RequestHandler.h"
+#include "ClientRequestHandler.h"
 
 #include <cstring>
 #include <string>
@@ -9,27 +9,30 @@
 #include "Log.h"
 
 
-RequestHandler::RequestHandler()
+#include <unistd.h>
+
+ClientRequestHandler::ClientRequestHandler()
 {
 	memset(m_recvBuffer, 0, BUF_SIZE);
 }
 
 
-RequestHandler::~RequestHandler()
+ClientRequestHandler::~ClientRequestHandler()
 {
 
 }
 
 
-bool RequestHandler::Initialize()
+bool ClientRequestHandler::Initialize()
 {
     m_cutOffQueryMap.clear();
 	return true;
 }
 
 
-void RequestHandler::Parse(int fd, const char* query, int queryLength)
+void ClientRequestHandler::Parse(const ConnectInfo* connectInfo, const char* query, int queryLength)
 {
+/*    sleep(10);
 	RequestInfo* ri = NULL;
     int trimIndex = 0;
     int i = 0;
@@ -39,7 +42,7 @@ void RequestHandler::Parse(int fd, const char* query, int queryLength)
     {
         if(query[i] == ';')
         {
-            itr = m_cutOffQueryMap.find(fd);
+            itr = m_cutOffQueryMap.find(connectInfo->fd);
             
             if(itr != m_cutOffQueryMap.end()) // if rest query exist
             {
@@ -81,7 +84,7 @@ void RequestHandler::Parse(int fd, const char* query, int queryLength)
     {
         std::string tempString(pointingQuery, i - trimIndex);
         
-        itr = m_cutOffQueryMap.find(fd);
+        itr = m_cutOffQueryMap.find(connectInfo->fd);
         if(itr != m_cutOffQueryMap.end()) // if rest query exist, concatenation
         {
             std::string tempString2(itr->second.c_str());
@@ -89,15 +92,25 @@ void RequestHandler::Parse(int fd, const char* query, int queryLength)
             m_cutOffQueryMap.erase(itr);
         }
 
-        if(m_cutOffQueryMap.insert(std::pair<int, std::string>(fd, tempString)).second == false)
+        if(m_cutOffQueryMap.insert(std::pair<int, std::string>(connectInfo->fd, tempString)).second == false)
         {
             ErrorLog("insertError");
         }
-    }
+    }*/
+}
+
+void ClientRequestHandler::IsConnected(const ConnectInfo* connectInfo)
+{
+    
+}
+
+void ClientRequestHandler::IsDisconnected(const ConnectInfo* connectInfo)
+{
+    
 }
 
 
-bool RequestHandler::ParsingQueryToRequestInfo(const char* query, const int queryLength, RequestInfo** pri)
+bool ClientRequestHandler::ParsingQueryToRequestInfo(const char* query, const int queryLength, RequestInfo** pri)
 {
     std::string queryString(query, queryLength);
     

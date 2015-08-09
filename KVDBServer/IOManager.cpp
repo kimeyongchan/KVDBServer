@@ -1,4 +1,5 @@
 #include "IOManager.h"
+#include "XmlData.h"
 #include "RequestInfo.h"
 #include "Log.h"
 #include "Block.h"
@@ -6,6 +7,7 @@
 #include "KVDBServer.h"
 #include <sstream>
 #include "Defines.h"
+#include "Network.h"
 
 IOManager::IOManager()
 {
@@ -14,6 +16,225 @@ IOManager::IOManager()
 
 IOManager::~IOManager()
 {
+}
+
+
+void IOManager::receiveData(const ConnectInfo* connectInfo, const char* data, int dataSize)
+{    
+    if(connectInfo->serverModule == SERVER_MODULE_MASTER)
+    {
+        receiveMasterData(connectInfo, data, dataSize);
+    }
+    else if(connectInfo->serverModule == SERVER_MODULE_CLIENT)
+    {
+        receiveClientData(connectInfo, data, dataSize);
+    }
+    else
+    {
+        ErrorLog("invalid server module - %d", connectInfo->serverModule);
+    }
+}
+
+
+void IOManager::receiveClientData(const ConnectInfo* connectInfo, const char* data, int dataSize)
+{
+    RequestInfo* requestInfo;
+    
+    if(parsingQuery(data, dataSize, &requestInfo) == false)
+    {
+        ErrorLog("parsing error");
+        return ;
+    }
+    
+    switch (requestInfo->type) {
+        case INSERT_REQUEST:
+        {
+            InsertRequestInfo * iri = (InsertRequestInfo*)requestInfo;
+            processInsert(iri);
+            delete iri;
+            break;
+        }
+        case INSERT_DIRECTORY_REQUEST:
+        {
+            InsertDirectoryRequestInfo * idri = (InsertDirectoryRequestInfo*)requestInfo;
+            processInsert(idri);
+            delete idri;
+            break;
+        }
+        case FIND_REQUEST:
+        {
+            FindRequestInfo * fri = (FindRequestInfo*)requestInfo;
+            processFind(fri);
+            delete fri;
+            break;
+        }
+        case DELETE_REQUEST:
+        {
+            DeleteRequestInfo * dri = (DeleteRequestInfo*)requestInfo;
+            processDelete(dri);
+            delete dri;
+            break;
+        }
+        default:
+        {
+            ErrorLog("type - %d", requestInfo->type);
+            break;
+        }
+    }
+}
+
+
+void IOManager::receiveMasterData(const ConnectInfo* connectInfo, const char* data, int dataSize)
+{
+    
+}
+
+bool IOManager::parsingQuery(const char* query, int queryLen, RequestInfo** pri) // pasing query to requestInfo
+{
+    std::string queryString(query, queryLen);
+    
+    std::size_t findTypeLength = queryString.find_first_of('(');
+    
+    if(findTypeLength == std::string::npos)
+    {
+        return false;
+    }
+    
+    std::size_t findDataLength = queryString.find_first_of(')');
+    
+    
+    if(queryString.substr(findDataLength+ 1).compare(";") != 0)
+    {
+        return false;
+    }
+    
+    if(findDataLength == std::string::npos)
+    {
+        return false;
+    }
+    
+    if(findTypeLength + 2 >= findDataLength)
+    {
+        return false;
+    }
+    std::string ee = queryString.substr(findTypeLength + 1, 1);
+    if(queryString.substr(findTypeLength + 1, 1).compare("\"") != 0
+       || queryString.substr(findDataLength + -1, 1).compare("\"") != 0)
+    {
+        ErrorLog("\" error ");
+        return false;
+    }
+    
+    std::string typeString = queryString.substr(0, findTypeLength);
+    std::string dataString = queryString.substr(findTypeLength + 1, findDataLength - findTypeLength - 1);
+    
+    if(typeString.compare("insert") == 0) // insert
+    {
+        std::size_t findDQM = dataString.find_first_of('"', 1);
+        
+        std::string firstString = dataString.substr(1, findDQM - 1);
+        
+        if(firstString.empty())
+        {
+            return false;
+        }
+        
+        if(dataString.substr(findDQM + 1, 2).compare(",\"") == 0) // file insert
+        {
+            std::size_t findDQM2 = dataString.find_first_of('"', findDQM + 3);
+            
+            if(findDQM2 == std::string::npos)
+            {
+                return false;
+            }
+            
+            std::string secondString = dataString.substr(findDQM + 3, findDQM2 - findDQM - 3);
+            
+            if(secondString.empty())
+            {
+                return false;
+            }
+            
+            if (dataString.length() != findDQM2 + 1)
+            {
+                return false;
+            }
+            
+            InsertRequestInfo* iri = new InsertRequestInfo();
+            iri->key = firstString.substr();
+            iri->value = secondString.substr();
+            
+            *pri = iri;
+            
+            return true;
+            
+        }
+        else if(dataString.length() == findDQM + 1) //directory insert
+        {
+            InsertDirectoryRequestInfo* idri = new InsertDirectoryRequestInfo();
+            idri->key = firstString.substr();
+            
+            *pri = idri;
+            
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    else if(typeString.compare("find") == 0) // find
+    {
+        std::size_t findDQM = dataString.find_first_of('"', 1);
+        
+        std::string firstString = dataString.substr(1, findDQM - 1);
+        
+        if(firstString.empty())
+        {
+            return false;
+        }
+        
+        if(dataString.length() != findDQM + 1)
+        {
+            return false;
+        }
+        
+        FindRequestInfo* fri = new FindRequestInfo();
+        fri->key = firstString.substr();
+        
+        *pri = fri;
+        
+        return true;
+    }
+    else if(typeString.compare("delete") == 0) // delete
+    {
+        std::size_t findDQM = dataString.find_first_of('"', 1);
+        
+        std::string firstString = dataString.substr(1, findDQM - 1);
+        
+        if(firstString.empty())
+        {
+            return false;
+        }
+        
+        if(dataString.length() != findDQM + 1)
+        {
+            return false;
+        }
+        
+        DeleteRequestInfo* dri = new DeleteRequestInfo();
+        dri->key = firstString.substr();
+        
+        *pri = dri;
+        
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+    
+    return true;
 }
 
 

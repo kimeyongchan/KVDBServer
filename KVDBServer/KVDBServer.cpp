@@ -3,9 +3,14 @@
 #include "Defines.h"
 #include "Network.h"
 #include "RequestInfo.h"
-#include "RequestHandler.h"
+#include "XmlData.h"
+#include "ClientRequestHandler.h"
+#include "MasterRequestHandler.h"
+#include "ClientResponseHandler.h"
+#include "MasterResponseHandler.h"
 #include "WorkerThread.h"
 #include "DiskManager.h"
+#include "IOManager.h"
 
 #include "LogBuffer.h"
 #include "LogFile.h"
@@ -16,21 +21,95 @@
 
 KVDBServer* KVDBServer::m_instance = NULL;
 
-
-void* WorkerThreadFunction(void *data)
-{
-    WorkerThread* wt = (WorkerThread*)data;
-    
-    wt->Run();
-    
-    return NULL;
-}
-
 bool KVDBServer::Initialize(int workerThreadCount)
 {
     m_log = new Log();
     if (m_log->Initialize(".") == false)
     {
+        return false;
+    }
+    
+    xmlData = new XmlData();
+    if(xmlData->initialize() == false)
+    {
+        ErrorLog("xmlData error");
+        return false;
+    }
+    
+    MasterRequestHandler* masterRequestHandler = new MasterRequestHandler();
+    if (masterRequestHandler->Initialize() == false)
+    {
+        ErrorLog("request error");
+        return false;
+    }
+    
+    ClientRequestHandler* clientRequestHandler = new ClientRequestHandler();
+    if (clientRequestHandler->Initialize() == false)
+    {
+        ErrorLog("request error");
+        return false;
+    }
+    
+    
+    int networkInfoCount = xmlData->serverInfoCount;
+    
+    NetworkInfo networkInfoList[networkInfoCount];
+    memset(networkInfoList, 0, sizeof(NetworkInfo) * networkInfoCount);
+    
+    for(int i = 0; i < networkInfoCount; i++)
+    {
+        networkInfoList[i].type = xmlData->serverInfoList[i].serverType;
+        networkInfoList[i].module = xmlData->serverInfoList[i].serverModule;
+        memcpy(networkInfoList[i].ip, xmlData->serverInfoList[i].ip, MAX_IP_LEN);
+        networkInfoList[i].port = xmlData->serverInfoList[i].port;
+        /*
+        switch (networkInfoList[i].module) {
+            case SERVER_MODULE_MASTER:
+            {
+                networkInfoList[i].receiveHandler = masterRequestHandler;
+                break;
+            }
+            case SERVER_MODULE_CLIENT:
+            {
+                networkInfoList[i].receiveHandler = clientRequestHandler;
+                break;
+            }
+            default:
+                break;
+        }*/
+    }
+    
+    WorkerThread* workerThreadArray = new IOManager[workerThreadCount];
+    
+    for(int i = 0; i < workerThreadCount; i++)
+    {
+        if(workerThreadArray[i].Initialize() == false)
+        {
+            ErrorLog("workerThread error");
+            return false;
+        }
+    }
+    
+    network = new Network();
+    if (network->Initialize(networkInfoList, networkInfoCount, workerThreadCount, workerThreadArray) == false)
+    {
+        ErrorLog("Network error");
+        return false;
+    }
+    
+    
+    
+    masterResponseHandler = new MasterResponseHandler();
+    if(masterResponseHandler->initialize() == false)
+    {
+        ErrorLog("master res init error");
+        return false;
+    }
+    
+    clientResponseHandler = new ClientResponseHandler();
+    if(clientResponseHandler->initialize() == false)
+    {
+        ErrorLog("client res init error");
         return false;
     }
     
@@ -46,47 +125,12 @@ bool KVDBServer::Initialize(int workerThreadCount)
         return false;
     }
     
-	RequestHandler* requestHandler = new RequestHandler();
-	if (requestHandler->Initialize() == false)
-	{
-		ErrorLog("request error");
-		return false;
-	}
-
-	m_network = new Network();
-	if (m_network->Initialize(PORT, requestHandler) == false)
-	{
-		ErrorLog("Network error");
-		return false;
-	}
-    
     m_diskManager = new DiskManager();
     if (m_diskManager->initialize(KVDB_PATH, BLOCK_SIZE, DISK_SIZE) == false)
     {
         ErrorLog("diskManager error");
         return false;
     }
-    
-    
-    m_workerThreadCount = workerThreadCount;
-
-	m_workerThreadArray = new WorkerThread[m_workerThreadCount];
-
-	for (int i = 0; i < m_workerThreadCount; i++)
-	{
-		if (m_workerThreadArray[i].Initialize() == false)
-		{
-			ErrorLog("worker thread error");
-			return false;
-		}
-        
-		if (pthread_create(m_workerThreadArray[i].GetTid(), NULL, WorkerThreadFunction, (void*)&m_workerThreadArray[i]) != 0)
-		{
-			ErrorLog("thread create error : ");
-			return false;
-		}
-
-	}
 
 	return true;
 }
@@ -95,10 +139,10 @@ void KVDBServer::Run()
 {
 	while (true)
 	{
-		m_network->ProcessEvent();
+		network->ProcessEvent();
 	}
 }
-
+/*
 void KVDBServer::SendWorkToWorkerThread(RequestInfo* ri)
 {
     int firstCnt, secondCnt;
@@ -135,3 +179,5 @@ void KVDBServer::SendWorkToWorkerThread(RequestInfo* ri)
         
     return ;
 }
+*/
+

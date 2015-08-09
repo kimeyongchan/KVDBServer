@@ -2,6 +2,7 @@
 
 #include <unistd.h>
 
+#include "Network.h"
 #include "RequestInfo.h"
 #include "IOManager.h"
 #include "Log.h"
@@ -22,9 +23,9 @@ bool WorkerThread::Initialize()
 {
 	pthread_mutex_init(&m_mutex, NULL);
     pthread_cond_init(&m_cond, NULL);
-	m_requestInfoQueue.clear();
+    dataPacketQueue.clear();
 
-    m_ioMgr = new IOManager();
+    //m_ioMgr = new IOManager();
     
 	return true;
 }
@@ -33,9 +34,10 @@ void WorkerThread::Run()
 {
 	while (true)
 	{
-		RequestInfo* requestInfo = PopRequestInfo();
-		if (requestInfo != NULL)
+		DataPacket* dp = PopDataPacket();
+		if (dp != NULL)
 		{
+            /*
             switch (requestInfo->type) {
                 case INSERT_REQUEST:
                 {
@@ -70,11 +72,16 @@ void WorkerThread::Run()
                     ErrorLog("type - %d", requestInfo->type);
                     break;
                 }
-            }
+            }*/
+            
+            receiveData(dp->connectInfo, dp->data, dp->dataSize);
+            
+            
 		}
 	}
 }
 
+/*
 void WorkerThread::PushRequestInfo(RequestInfo* requestInfo)
 {
 	Lock();
@@ -104,11 +111,52 @@ RequestInfo* WorkerThread::PopRequestInfo()
 
 	return ri;
 }
+*/
 
-int WorkerThread::GetRequestInfoCount()
+void WorkerThread::PushDataPacket(DataPacket* dataPacket)
+{
+    Lock();
+    
+    dataPacketQueue.push_back(dataPacket);
+    
+    if(dataPacketQueue.size() == 1)
+        pthread_cond_signal(&m_cond);
+    
+    UnLock();
+}
+
+
+DataPacket* WorkerThread::PopDataPacket()
+{
+    Lock();
+    
+    DataPacket* dp = dataPacketQueue.front();
+    if (dp != NULL)
+    {
+        dataPacketQueue.pop_front();
+        UnLock();
+    }
+    else
+    {
+        UnLockAndWait();
+    }
+    
+    return dp;
+}
+
+int WorkerThread::getDataPacketCount()
+{
+    Lock();
+    int cnt = (int)dataPacketQueue.size();
+    UnLock();
+    return cnt;
+}
+
+
+/*int WorkerThread::GetRequestInfoCount()
 {
     Lock();
     int cnt = (int)m_requestInfoQueue.size();
     UnLock();
     return cnt;
-}
+}*/
