@@ -421,7 +421,7 @@ template <typename K, typename T>
 std::pair<typename radix_tree<K, T>::iterator, bool> radix_tree<K, T>::insert(const value_type &val)
 {
 	if (m_root == NULL) {
-		K nul = radix_substr(val.first, 0, 0);
+		K nul = radix_substr(val.first, 0, 0); //1bit
 
 		m_root = new radix_tree_node<K, T>;
 		m_root->m_key = nul;
@@ -504,36 +504,5 @@ radix_tree_node<K, T>* radix_tree<K, T>::find_node(const K &key, radix_tree_node
 	}
 }
 
-/*
-(root)
-|
-|---------------
-|       |      |
-abcde   bcdef  c
-|   |   |      |------
-|   |   $3     |  |  |
-f   ge         d  e  $6
-|   |          |  |
-$1  $2         $4 $5
-find_node():
-bcdef  -> $3
-bcdefa -> bcdef
-c      -> $6
-cf     -> c
-abch   -> abcde
-abc    -> abcde
-abcde  -> abcde
-abcdef -> $1
-abcdeh -> abcde
-de     -> (root)
-(root)
-|
-abcd
-|
-$
-(root)
-|
-$
-*/
 
 #endif // RADIX_TREE_HPP
