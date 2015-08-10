@@ -41,7 +41,6 @@ IOManager::~IOManager()
      IoMgrReturnValue returnVal(NULL, 0, 0);  // 리턴 블럭이 루트 블럭일때는 인덱스가 -1일것이다 참고 해야 한다.
      
      // 먼저 있는지 확인한다.
-     int namedCacheInsertComponentIdx =0; // 네임드캐시 넣을 네임드 데이터 컴퍼넌트 시작 인덱스
      componentList = split(reqInfo->key, '/');
      NamedData* nd = namedCache->getRoodAddr();
      
@@ -53,7 +52,6 @@ IOManager::~IOManager()
          if(childNd == NULL)// 없을때
          {
              parentNamedData = nd;  // 네임드 캐시에 넣을때 쓰일 변수
-             namedCacheInsertComponentIdx = i;  // 네임드 캐시에 넣을때 쓰일 변수
              returnVal = checkBufferCacheAndDisk(nd->getIdtAddr(), i-1, componentList.size()-1);
              
              if(returnVal.returnCode <0)
@@ -179,7 +177,7 @@ IOManager::~IOManager()
              uint64_t newChingingBlockAdr = cacheMgr->getNewBlockAdr();  // 캐시로 부터 새로운 주소를 받아온다.
              Block* newChainingBlock = new Block();
              uint64_t newBlockIndAdr = newChainingBlock->getFirstIndirectionBlockAdr(newChingingBlockAdr);
-             data->setChainingIndBlockAddress(newBlockIndAdr);
+             data->setIndBlockAddress(newBlockIndAdr);
              
              
              // 블럭에 데이터 insert
@@ -223,6 +221,8 @@ IOManager::~IOManager()
          namedCache->insert(parentNamedData, childNamedData);
          parentNamedData = childNamedData;
      }
+   
+     namedCache->commitLruQueue();
      
      
      // BufferCache 넣기
@@ -230,17 +230,19 @@ IOManager::~IOManager()
      {
          if(false == bufferCache->insertBlock2Cache(iter->first, iter->second))
          {
-             BlockInfo dirtyBlockInfo = bufferCache->getDeleteBlock();  // BlockInfo 는 블럭주소 , 블락을 멤버로 갖는 클래스 가상으로 생각해놓은 클래스임
+             uint64_t blockAdr = 0;
+             Block* block = 0;
+             
+             bool result = bufferCache->getDeleteBlock(blockAdr, block);  // BlockInfo 는 블럭주소 , 블락을 멤버로 갖는 클래스 가상으로 생각해놓은 클래스임
              
              if(dirtyBlockInfo.block == NULL)
              {
-                 bufferCache->deleteDirty(dirtyBlockInfo.blockAdr);
                  bufferCache->insertBlock2Cache(iter->first, iter->second) // 다시 넣어준다.
                  continue;
              }
              
-             KVDBServer::getInstance()->m_diskManager->writeDisk()(dirtyBlockInfo.blockAdr, dirtyBlockInfo.block));
-             bufferCache->deleteDirty(dirtyBlockInfo.blockAdr);
+             KVDBServer::getInstance()->m_diskManager->writeDisk()(blockAdr, block));
+             bufferCache->deleteDirty(blockAdr);
              bufferCache->insertBlock2Cache(iter->first, iter->second)  // 다시 넣어준다.
          }
      }
@@ -284,9 +286,9 @@ IOManager::~IOManager()
  // 새블럭 생성
  int8_t IOManager::processInsert(InsertDirectoryRequestInfo* reqInfo)
  {
-     /*
+/*
      DebugLog("INSERT_DIRECTORY - key : %s", reqInfo->key.c_str());
-     
+ 
      componentList.clear();
      insertBufferCacheDataMap.clear();
      namedCacheDataList.clear();
@@ -295,7 +297,6 @@ IOManager::~IOManager()
      NamedData* parentNamedData;
      uint64_t indirectionBlockAdr =0;
      IoMgrReturnValue returnVal;  // 리턴 블럭이 루트 블럭일때는 인덱스가 -1일것이다 참고 해야 한다.
-     
      
      
      // 먼저 있는지 확인한다.
@@ -311,7 +312,6 @@ IOManager::~IOManager()
          if(childNd == NULL)// 없을때
          {
              parentNamedData = nd;  // 네임드 캐시에 넣을때 쓰일 변수
-             namedCacheInsertComponentIdx = i;  // 네임드 캐시에 넣을때 쓰일 변수
              returnVal = checkBufferCacheAndDisk(nd->getIdtAddr(), i-1, componentList.size()-1);
              
              if(returnVal.returnCode <0)
@@ -379,23 +379,27 @@ IOManager::~IOManager()
           namedCache->insert(parentNamedData, childNamedData);
           parentNamedData = childNamedData;
       }
+   
+      namedCache->commitLruQueue();
       
       // 버퍼캐시에 넣기
       for (auto iter = insertBufferCacheDataMap.begin(); iter!= insertBufferCacheDataMap.end(); ++iter)
       {
           if(false == bufferCache->insertBlock2Cache(iter->first, iter->second))
           {
-              BlockInfo dirtyBlockInfo = bufferCache->getDeleteBlock();  // BlockInfo 는 블럭주소 , 블락을 멤버로 갖는 클래스 가상으로 생각해놓은 클래스임
+              uint64_t blockAdr = 0;
+              Block* block = 0;
+              
+              bool result = bufferCache->getDeleteBlock(blockAdr, block);  // BlockInfo 는 블럭주소 , 블락을 멤버로 갖는 클래스 가상으로 생각해놓은 클래스임
               
               if(dirtyBlockInfo.block == NULL)
               {
-                  bufferCache->deleteDirty(dirtyBlockInfo.blockAdr);
                   bufferCache->insertBlock2Cache(iter->first, iter->second) // 다시 넣어준다.
                   continue;
               }
               
-              KVDBServer::getInstance()->m_diskManager->writeDisk()(dirtyBlockInfo.blockAdr, dirtyBlockInfo.block));
-              bufferCache->deleteDirty(dirtyBlockInfo.blockAdr);
+              KVDBServer::getInstance()->m_diskManager->writeDisk()(blockAdr, block));
+              bufferCache->deleteDirty(blockAdr);
               bufferCache->insertBlock2Cache(iter->first, iter->second)  // 다시 넣어준다.
           }
       }
@@ -427,8 +431,8 @@ IOManager::~IOManager()
       
       // 로그파일 클리어
       KVDBServer::getInstance()->m_logFile->clear();
-      
-                  */
+   
+    */
       return 0;
  }
  
@@ -436,35 +440,38 @@ IOManager::~IOManager()
  void IOManager::processFind(FindRequestInfo* reqInfo)
  {
      /*
-     
      DebugLog("FIND - key : %s", reqInfo->key.c_str());
      
-     insertNamedDataIndirectionAdrList.clear();
+     componentList.clear();
      insertBufferCacheDataMap.clear();
+     namedCacheDataList.clear();
+
+     NamedData* parentNamedData;
+     IoMgrReturnValue returnVal;  // 리턴 블럭이 루트 블럭일때는 인덱스가 -1일것이다 참고 해야 한다.
      
      // 먼저 있는지 확인한다.
-     int namedCacheInsertComponentIdx =0; // 네임드캐시 넣을 네임드 데이터 컴퍼넌트 시작 인덱스
-     std::vector<std::string> components = split(reqInfo->key, '/');
+     componentList = split(reqInfo->key, '/');
      NamedData* nd = namedCache->getRoodAddr();
      
-     for (int i=0; i < components.size(); ++i)
+     for (int i=0; i < componentList.size(); ++i)
      {
-         std::string c = components[i];
+         std::string c = componentList[i];
          
          NamedData* childNd = namedCache->findComponent(c, nd); // c: 찾으려는 컴퍼넌트 , nd: 부모 NamedData
          
          if(childNd == NULL)// 없을때
          {
-             FindReturnValue returnVal = checkBufferCacheAndDisk_2(nd->getIdtAddr(),i, components.size()-1);
+             parentNamedData = nd;
+             returnVal = checkBufferCacheAndDisk(nd->getIdtAddr(),i-1, componentList.size()-1);
              
              if(returnVal.block == NULL) // 못찾았을 경우
              {
-                 DebugLog("can not find %s", components[returnVal.componentIdx]);
+                 DebugLog("can not find %s", componentList[returnVal.componentIdx]);
                  
              }else  // 찾았을 경우
              {
                  Block* findBlock = returnVal.block;
-                 Data* data =findBlock->getData(components[returnVal.componentIdx]);
+                 Data* data =findBlock->getData(componentList[returnVal.componentIdx]);
                  int8_t dataType =data->getFormatType();
                  
                  if(dataType == FLAG_DIRECTORY_DATA)
@@ -481,26 +488,26 @@ IOManager::~IOManager()
                  }
              }
              
-             return;
+             break;
          }
          
-         if(i != components.size()-1)  // 있을때, 중간 노드 일때
+         if(i != componentList.size()-1)  // 있을때, 중간 노드 일때
          {
              nd = childNd;
              continue;
          }
          
          // 있을때 맨 마지막일 때
-         FindReturnValue returnVal = checkBufferCacheAndDisk_2(childNd->getIdtAddr(),  i, components.size()-1);
+         returnVal = checkBufferCacheAndDisk(childNd->getIdtAddr(),  i, componentList.size()-1);
          if(returnVal.block == NULL) // 못찾았을 경우
          {
-             DebugLog("can not find %s", components[returnVal.componentIdx]);
+             DebugLog("can not find %s", componentList[returnVal.componentIdx]);
              return;
              
          }else  // 찾았을 경우
          {
              Block* findBlock = returnVal.block;
-             Data* data =findBlock->getData(components[returnVal.componentIdx]);
+             Data* data =findBlock->getData(componentList[returnVal.componentIdx]);
              int8_t dataType =data->getFormatType();
              
              if(dataType == FLAG_DIRECTORY_DATA)
@@ -515,15 +522,49 @@ IOManager::~IOManager()
              {
                  DebugLog("find key vlue chaining data");
              }
-             return;
+             break;
          }
      }// for
      
-     */
+     
+     // 캐시에 넣기
+     // 네임드 캐시에 넣기
+     for(NamedCacheData data: namedCacheDataList)
+     {
+         NamedData* childNamedData = new NamedData(componentList[data.componentIdx], data.indirectionBlockAdr);
+         namedCache->insert(parentNamedData, childNamedData);
+         parentNamedData = childNamedData;
+     }
+     
+     namedCache->commitLruQueue();
+     
+     // 버퍼캐시에 넣기
+     for (auto iter = insertBufferCacheDataMap.begin(); iter!= insertBufferCacheDataMap.end(); ++iter)
+     {
+         if(false == bufferCache->insertBlock2Cache(iter->first, iter->second))
+         {
+             uint64_t blockAdr = 0;
+             Block* block = 0;
+             
+             bool result = bufferCache->getDeleteBlock(blockAdr, block);  // BlockInfo 는 블럭주소 , 블락을 멤버로 갖는 클래스 가상으로 생각해놓은 클래스임
+             
+             if(dirtyBlockInfo.block == NULL)
+             {
+                 bufferCache->insertBlock2Cache(iter->first, iter->second) // 다시 넣어준다.
+                 continue;
+             }
+             
+             KVDBServer::getInstance()->m_diskManager->writeDisk()(blockAdr, block));
+             bufferCache->deleteDirty(blockAdr);
+             bufferCache->insertBlock2Cache(iter->first, iter->second)  // 다시 넣어준다.
+         }
+     }
+      
+      */
  
  }
- 
- 
+
+
  void IOManager::processDelete(DeleteRequestInfo* reqInfo)
  {
  
@@ -531,7 +572,7 @@ IOManager::~IOManager()
  
  }
  
- /*
+
  std::vector<std::string> IOManager::split(const std::string &s, char delim)
  {
      std::vector<std::string> elems;
@@ -543,7 +584,7 @@ IOManager::~IOManager()
      
      return elems;
  }
- 
+ /*
  uint64_t IOManager::ibaToBa(uint64_t iba)
  {
      uint64_t rootBlockAddress= KVDBServer::getInstance()->cacheMgr->getSuperBlock()->getRootBlockAddress();
@@ -552,7 +593,7 @@ IOManager::~IOManager()
  
      return blockAddress;
  }
- 
+ */
  uint16_t IOManager::ibaToOffsetIdx(uint64_t iba, uint64_t ba)
  {
      uint8_t  headerSize = Block::getBlockHeaderSize();
@@ -566,74 +607,10 @@ IOManager::~IOManager()
      return true;
  }
  
- */
- 
- // 파인드
- FindReturnValue IOManager::checkBufferCacheAndDisk_2(uint64_t indirectionBa, int curIdx, int lastIdx)
- {
-     /*
-     uint64_t ba = ibaToBa(indirectionBa);
-     uint16_t offsetIdx =ibaToOffsetIdx(indirectionBa, ba);
-     
-     Block* block = bufferCache->findBlock(ba);
-     Block* diskReadBlock = NULL;
-     if(block == NULL)
-     {
-         diskReadBlock = new diskReadBlock();
-         if(KVDBServer::getInstance()->m_diskManager->readBlock(ba, diskReadBlock)== false)
-         {
-             delete diskReadBlock;
-             
-             FindReturnValue returnVal(NULL, curIdx);
-             return NULL returnVal; // 블럭이 없다.
-         }
-         
-         block = diskReadBlock;
-     }
-     
-     insertNamedDataIndirectionAdrList.push_back(indirectionBa);   //// 네임드 캐시에 넣을때 인다이렉션 블럭어드레스 .... 러프하게 생각해서 다시한번 생각해 봐야한다.
-     
-     Data* data = block->getData(offsetIdx);
-     if(curIdx != lastIdx)  // 중간 데이터 일때
-     {
-         if(diskReadBlock != NULL)
-             insertBufferCacheDataMap.insert(std::pair<uint64_t, Block*>(ba, diskReadBlock));
-         
-         if(data == NULL)
-         {
-             FindReturnValue returnVal(NULL, curIdx);
-             return NULL returnVal; // 블럭이 없다.
-         }
-         else
-         {
-             DirectoryData* dirData = (DirectoryData*)data;
-             return checkBufferCacheAndDisk(dirData->getIndBlockAddress(), curIdx +1, lastIdx);
-         }
-         
-     }else // 마지막 데이터 일때
-     {
-         if(data == NULL)
-         {
-             FindReturnValue returnVal(NULL, curIdx);
-             return NULL returnVal;
-         }else
-         {
-             FindReturnValue returnVal(block, curIdx);
-             return NULL returnVal;
-         }
-         
-     }
-     */
-     FindReturnValue retrunVal(NULL, 0);
-     return retrunVal ;
- 
- }
- 
- 
- // 디렉토리 인서트
+/*
  IoMgrReturnValue IOManager::checkBufferCacheAndDisk(uint64_t indirectionBa, int curIdx, int lastIdx)
  {
-   /*  uint64_t blockAddress    = ibaToBa(indirectionBa);
+    uint64_t blockAddress    = ibaToBa(indirectionBa);
      uint16_t indirectionIdx  = ibaToOffsetIdx(indirectionBa, blockAddress);
      
      Block*  block = bufferCache->findBlock(blockAddress);
@@ -683,12 +660,12 @@ IOManager::~IOManager()
              return returnVal;
          }
      }
-    */
+    
      
      IoMgrReturnValue returnVal(NULL, 0, 0);  // 값이 이미 있음
      return returnVal;
  }
 
-
+*/
 
 

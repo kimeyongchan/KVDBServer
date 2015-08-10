@@ -43,20 +43,6 @@ public:
     }
 };
 
-
-class FindReturnValue
-{
-public:
-    const Block* block;
-    int componentIdx;
-    
-    FindReturnValue(const Block* block, int componentIdx)
-    {
-        this->block = block;
-        this->componentIdx = componentIdx;
-    }
-};
-
 class IoMgrReturnValue
 {
 public:
@@ -71,6 +57,7 @@ public:
         this->returnCode    = returnCode;
     }
 };
+
 
 class IOManager
 {
@@ -88,12 +75,10 @@ private:
     
     std::vector<std::string>    componentList;
     std::vector<NamedCacheData> namedCacheDataList;
-    std::vector<uint64_t>       insertNamedDataIndirectionAdrList;
     std::map<uint64_t, Block*>  insertBufferCacheDataMap; //<블럭주소, 블럭>
     
     std::vector<std::string> split(const std::string &s, char delim);
     
-    FindReturnValue checkBufferCacheAndDisk_2(uint64_t indirectionBa, int curIdx, int lastIdx);
     IoMgrReturnValue checkBufferCacheAndDisk(uint64_t indirectionBa, int curIdx, int lastIdx);
     
     uint16_t ibaToOffsetIdx(uint64_t iba, uint64_t ba);
