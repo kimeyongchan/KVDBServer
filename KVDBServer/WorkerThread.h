@@ -26,16 +26,16 @@ public:
     
     int tfd;
 
-private:
+protected:
 	void Lock() { pthread_mutex_lock(&mutex); }
 	void UnLock() { pthread_mutex_unlock(&mutex); }
     void UnLockAndWait() { pthread_cond_wait(&cond, &mutex); pthread_mutex_unlock(&mutex); }
 
-private:
+protected:
     pthread_t tid;
 	pthread_mutex_t mutex;
     pthread_cond_t cond;
-    std::deque<DataPacket*> dataPacketQueue;
+    std::deque<DataPacket*>* dataPacketQueue;
 };
 
 #endif //__WORKER_THREAD_H__

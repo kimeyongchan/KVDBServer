@@ -85,6 +85,8 @@ void IOManager::receiveClientData(const ConnectInfo* connectInfo, const char* da
             break;
         }
     }
+    
+    KVDBServer::getInstance()->network->sendData(tfd, connectInfo, "fefe", 4);
 }
 
 
@@ -248,7 +250,6 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
     
     DebugLog("INSERT - key : %s, value : %s ", reqInfo->key.c_str(), reqInfo->value.c_str());
    
-    
     /*
      const NamedData* nd = namedCache->findND(component, NamedData); // for
  

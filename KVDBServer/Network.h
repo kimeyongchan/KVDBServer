@@ -76,7 +76,7 @@ public:
 	bool Initialize(const NetworkInfo* _networkInfoList, int _networkInfoCount, int _workThreadCount, WorkerThread* _workerThreadArray);
     bool AddNetworkInfo(const NetworkInfo* _networkInfo);
 	void ProcessEvent();
-    void SendData(const ConnectInfo* connectInfo, const char* data, int dataSize);
+    void sendData(int threadId, const ConnectInfo* connectInfo, const char* data, int dataSize);
 
 private:
 	int CreateTCPServerSocket(const char* ip, unsigned short port);

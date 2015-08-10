@@ -60,7 +60,7 @@ bool Network::Initialize(const NetworkInfo* _networkInfo, int _networkInfoCount,
         if(_networkInfo[i].type == SERVER_TYPE_SERVER)
             listenSocketCount++;
 
-    serverConnectInfoList = (ConnectInfo*)malloc(sizeof(ConnectInfo) * listenSocketCount);
+    serverConnectInfoList = new ConnectInfo[listenSocketCount]; // (ConnectInfo*)malloc(sizeof(ConnectInfo) * listenSocketCount);
     
     listenSocketCount = 0;
 
@@ -128,9 +128,9 @@ bool Network::Initialize(const NetworkInfo* _networkInfo, int _networkInfoCount,
             return false;
         }
         
-        workerThreadArray[i].tfd = i;
+        workerThreadArray[i].tfd = i+10;
         
-        EV_SET(&connectEvent, i+10, EVFILT_USER, EV_ADD | EV_ENABLE, NOTE_TRIGGER, 0, NULL);
+        EV_SET(&connectEvent, i+10, EVFILT_USER, EV_ADD | EV_ENABLE, 0, 0, NULL);
         
         if (kevent(eventFd, &connectEvent, 1, NULL, 0, NULL) == -1)
         {
@@ -177,7 +177,7 @@ bool Network::AddServerTypeNetworkInfo(const NetworkInfo* _networkInfo)
     
     serverConnectInfoList[listenSocketCount].serverModule = _networkInfo->module;
     
-    EV_SET(&connectEvent, serverConnectInfoList[listenSocketCount].fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, (void*)&serverConnectInfoList[listenSocketCount]);
+    EV_SET(&connectEvent, serverConnectInfoList[listenSocketCount].fd, EVFILT_READ, EV_ADD, 0, 0, (void*)&serverConnectInfoList[listenSocketCount]);
     
     
     listenSocketCount++;
@@ -349,7 +349,7 @@ void Network::ProcessEvent()
                             if((connectInfo->flags & FLAG_PROCESSING) != 0)
                             {
                                 DebugLog("");
-                                TempBufferInfo* saveData = (TempBufferInfo*)malloc(sizeof(TempBufferInfo));
+                                TempBufferInfo* saveData = new TempBufferInfo();
                                 saveData->tempBufferSize = recvDataSize;
                                 saveData->tempBuffer = (char*)malloc(sizeof(char) * recvDataSize);
                                 memcpy(saveData->tempBuffer, pWholeRecvBuffer, recvDataSize);
@@ -397,7 +397,7 @@ void Network::ProcessEvent()
                             if((connectInfo->flags & FLAG_PROCESSING) != 0)
                             {
                                 DebugLog("");
-                                TempBufferInfo* saveData = (TempBufferInfo*)malloc(sizeof(TempBufferInfo));
+                                TempBufferInfo* saveData = new TempBufferInfo();
                                 saveData->tempBufferSize = (int)dataSize;
                                 saveData->tempBuffer = (char*)malloc(sizeof(char) * (int)dataSize);
                                 memcpy(saveData->tempBuffer, pWholeRecvBuffer, (int)dataSize);
@@ -414,7 +414,7 @@ void Network::ProcessEvent()
                             
                             if(isTempBufferInfoEmpty)
                             {
-                                wholeRecvBufferSize = wholeRecvBufferSize - ((int)dataSize - sizeof(dataSize));
+                                wholeRecvBufferSize = wholeRecvBufferSize - ((int)dataSize + sizeof(dataSize));
                                 wholeRecvBuffer = recvBuffer + dataSize + sizeof(dataSize);
                             }
                             else
@@ -488,7 +488,34 @@ void Network::ProcessEvent()
             }
             else if(event[i].filter == EVFILT_USER)
             {
-                DebugLog("fefe");
+                DebugLog("FEfe");
+                
+                
+                EV_SET(&connectEvent, event[i].ident, EVFILT_USER, EV_DISABLE, EV_CLEAR, NOTE_TRIGGER, NULL);
+                if (kevent(eventFd, &connectEvent, 1, NULL, 0, NULL) == -1)
+                {
+                    ErrorLog("kevent init error");
+                }
+                
+                ConnectInfo* connectInfo = (ConnectInfo*)event[i].udata;
+                
+                if((connectInfo->flags & FLAG_DISCONNECTED) != 0)
+                {
+                    DelClientPool(connectInfo->fd);
+                    continue ;
+                }
+                
+                if(connectInfo->tempDataQueue.empty() == false)
+                {
+                    TempBufferInfo* tbi = connectInfo->tempDataQueue.front();
+                    connectInfo->tempDataQueue.pop_front();
+                    sendDataToWorkerThread(connectInfo, tbi->tempBuffer, tbi->tempBufferSize);
+                    
+                    delete tbi;
+                }
+                
+                connectInfo->flags = 0;
+                
             }
         }
     }
@@ -523,15 +550,11 @@ void Network::sendDataToWorkerThread(ConnectInfo* const _connectInfo, const char
     
     workerThreadArray[fitNum].PushDataPacket(dp);
     
- //   EV_SET(&connectEvent, 10, EVFILT_USER, EV_ENABLE,  NOTE_TRIGGER, 0, _connectInfo);
- //   EV_SET( &event, m_eventId, EVFILT_USER, EV_ENABLE, NOTE_FFCOPY|NOTE_TRIGGER|0x1, 0, NULL )
-    
     return ;
-
 }
 
 
-void Network::SendData(const ConnectInfo* connectInfo, const char* data, int dataSize)
+void Network::sendData(int threadId, const ConnectInfo* connectInfo, const char* data, int dataSize)
 {
     ssize_t sendCnt = send(connectInfo->fd, (void*)data, dataSize, NULL);
     if(sendCnt < 0)
@@ -541,6 +564,115 @@ void Network::SendData(const ConnectInfo* connectInfo, const char* data, int dat
     
     DebugLog("%d, %d", connectInfo->fd, connectInfo->flags);
     
+    EV_SET(&connectEvent, threadId, EVFILT_USER, EV_ENABLE, NOTE_TRIGGER, 0, (void*)connectInfo);
+
+    if (kevent(eventFd, &connectEvent, 1, NULL, 0, NULL) == -1)
+    {
+        ErrorLog("kevent init error");
+        return ;
+    }
+}
+
+
+int Network::CreateTCPServerSocket(const char* ip, unsigned short port)
+{
+	int sock;
+	struct sockaddr_in servaddr;
+
+	if ((sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
+	{
+		printf("socket() failed.\n");
+		return -1;
+	}
+
+	memset(&servaddr, 0, sizeof(struct sockaddr_in));
+	servaddr.sin_family = AF_INET;
+	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	servaddr.sin_port = htons(port);
+
+	if (bind(sock, (struct sockaddr*)&servaddr, sizeof(struct sockaddr_in)) < 0)
+	{
+		printf("Bind() failed.\n");
+		return -2;
+	}
+
+	if (listen(sock, SOMAXCONN)) {
+		printf("Listen() failed.\n");
+		return -3;
+	}
+
+	return sock;
+}
+
+int Network::CreateTCPClientSocket(const char* ip, unsigned short port)
+{
+    int sock;
+    struct sockaddr_in addr;
+    
+    if ((sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
+    {
+        printf("socket() failed.\n");
+        return -1;
+    }
+    
+    memset(&addr, 0, sizeof(struct sockaddr_in));
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    addr.sin_port = htons(port);
+
+    if(connect(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+    {
+        printf("can't connect.\n");
+        return -2;
+    }
+    
+    return sock;
+}
+
+ConnectInfo* Network::AddClientPool(int fd)
+{
+	for (int i = 0; i < MAX_CONNECT_SIZE; i++) {
+		if (connectInfoList[i].fd == 0) {
+			connectInfoList[i].fd = fd;
+			return &connectInfoList[i];
+		}
+	}
+
+	return NULL;
+}
+
+bool Network::DelClientPool(int fd)
+{
+	for (int i = 0; i < MAX_CONNECT_SIZE; i++) {
+		if (connectInfoList[i].fd == fd) {
+			connectInfoList[i].fd = 0;
+            connectInfoList[i].flags = 0;
+            connectInfoList[i].serverModule = -1;
+            //ToDo. memory delete queue
+            connectInfoList[i].tempDataQueue.clear();
+            if(connectInfoList[i].tempBufferInfo.tempBufferSize != 0)
+            {
+                connectInfoList[i].tempBufferInfo.tempBufferSize = 0;
+                free(connectInfoList[i].tempBufferInfo.tempBuffer);
+            }
+            memset(&connectInfoList[i].tempBufferInfo, 0, sizeof(TempBufferInfo));
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool Network::GetClientFd(int fd)
+{
+	int	i;
+	for (i = 0; i < MAX_CONNECT_SIZE; i++) {
+		if (connectInfoList[i].fd == fd) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 
@@ -667,95 +799,3 @@ void Network::ProcessEvent()
 
 #else
 #endif
-
-
-int Network::CreateTCPServerSocket(const char* ip, unsigned short port)
-{
-	int sock;
-	struct sockaddr_in servaddr;
-
-	if ((sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
-	{
-		printf("socket() failed.\n");
-		return -1;
-	}
-
-	memset(&servaddr, 0, sizeof(struct sockaddr_in));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	servaddr.sin_port = htons(port);
-
-	if (bind(sock, (struct sockaddr*)&servaddr, sizeof(struct sockaddr_in)) < 0)
-	{
-		printf("Bind() failed.\n");
-		return -2;
-	}
-
-	if (listen(sock, SOMAXCONN)) {
-		printf("Listen() failed.\n");
-		return -3;
-	}
-
-	return sock;
-}
-
-int Network::CreateTCPClientSocket(const char* ip, unsigned short port)
-{
-    int sock;
-    struct sockaddr_in addr;
-    
-    if ((sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
-    {
-        printf("socket() failed.\n");
-        return -1;
-    }
-    
-    memset(&addr, 0, sizeof(struct sockaddr_in));
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    addr.sin_port = htons(port);
-
-    if(connect(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-    {
-        printf("can't connect.\n");
-        return -2;
-    }
-    
-    return sock;
-}
-
-ConnectInfo* Network::AddClientPool(int fd)
-{
-	for (int i = 0; i < MAX_CONNECT_SIZE; i++) {
-		if (connectInfoList[i].fd == 0) {
-			connectInfoList[i].fd = fd;
-			return &connectInfoList[i];
-		}
-	}
-
-	return NULL;
-}
-
-bool Network::DelClientPool(int fd)
-{
-	for (int i = 0; i < MAX_CONNECT_SIZE; i++) {
-		if (connectInfoList[i].fd == fd) {
-			connectInfoList[i].fd = 0;
-			return true;
-		}
-	}
-
-	return false;
-}
-
-bool Network::GetClientFd(int fd)
-{
-	int	i;
-	for (i = 0; i < MAX_CONNECT_SIZE; i++) {
-		if (connectInfoList[i].fd == fd) {
-			return true;
-		}
-	}
-
-	return false;
-}
