@@ -71,14 +71,7 @@ public:
     {
         return indirectionCnt;
     }
-    
-    void calculateFreeSpace(uint16_t dataSize, uint8_t offsetSize, bool isIncrease)
-    {
-        if(isIncrease == true)
-            freeSpace +=(dataSize + offsetSize);
-        else
-            freeSpace -=(dataSize + offsetSize);
-    }
+
     
     uint16_t getFreeSpace() const
     {
@@ -140,6 +133,15 @@ public:
         return &indirectionDataMap;
     }
     
+private:
+    
+    void calculateFreeSpace(uint16_t dataSize, uint8_t offsetSize, bool isInsertData)
+    {
+        if(isInsertData == false)
+            freeSpace +=(dataSize + offsetSize);
+        else
+            freeSpace -=(dataSize + offsetSize);
+    }
     
 
 };

@@ -13,7 +13,6 @@ bool Block::insertData(uint16_t idx, uint16_t offset, Data* data)
     
     uint16_t dataSize = data->getDataSize();
   
-
     if(freeSpace < dataSize)
         return false;
     
@@ -22,25 +21,14 @@ bool Block::insertData(uint16_t idx, uint16_t offset, Data* data)
     
     IndirectionData* iData = new IndirectionData(offset, data);
     
+    uint16_t lastIndirectionIdx = getLastIndirectionNumber();
     
-    if(indirectionDataMap.rbegin()->first == (indirectionDataMap.size()-1))  // 꽉찬경우
-    {
-        indirectionDataMap.insert(std::pair<uint16_t, IndirectionData*>(indirectionDataMap.size(), iData));
-        calculateFreeSpace(dataSize, 2, false);
-        
-    }else  // 중간에 비어있는 경우
-    {
-        for(uint16_t i=0; true; ++i)
-        {
-            if(indirectionDataMap.find(i) == indirectionDataMap.end())
-            {
-                indirectionDataMap.insert(std::pair<uint16_t, IndirectionData*>(i, iData));
-                break;
-            }
-        }
-        
-        calculateFreeSpace(dataSize, 0, false);
-    }
+    indirectionDataMap.insert(std::pair<uint16_t, IndirectionData*>(idx, iData));
+    
+    if(idx<=lastIndirectionIdx)
+        calculateFreeSpace(dataSize, 0, true);
+    else
+        calculateFreeSpace(dataSize, 2, true);
     
     increaseIndirectionCnt();
     
@@ -53,7 +41,6 @@ bool Block::deleteData(uint16_t idx)
     
     if(iter == indirectionDataMap.end())
         return false; //찾는 키 없다.
-    
     
     Data* data = iter->second->data;
     uint16_t dataSize = data->getDataSize();
@@ -71,7 +58,7 @@ bool Block::deleteData(uint16_t idx)
     
     
     indirectionDataMap.erase(iter);
-    calculateFreeSpace(dataSize, 0, true);
+    calculateFreeSpace(dataSize, 0, false);
     decreaseIndirctionCnt();
     
     return true;
