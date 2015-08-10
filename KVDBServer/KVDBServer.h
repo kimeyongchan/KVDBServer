@@ -31,7 +31,7 @@ public:
     void SendWorkToWorkerThread(RequestInfo* ri);
 //    WorkerThread* GetWorkerThreadArray() { return m_workerThreadArray; }
 
-private:
+public:
 	Network* m_network;
 	Log* m_log;
 	WorkerThread* m_workerThreadArray;

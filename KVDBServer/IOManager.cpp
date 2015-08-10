@@ -25,11 +25,9 @@ IOManager::~IOManager()
  // 기존 블럭 쓰거나, 체이닝할때 새블럭 할당
  int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
  {
-
-  /*
      DebugLog("INSERT - key : %s, value : %s ", reqInfo->key.c_str(), reqInfo->value.c_str());
      
-     
+ /*
      componentList.clear();
      namedCacheDataList.clear();                         // 네임드캐시
      insertBufferCacheDataMap.clear();                   // 버퍼캐시
@@ -286,9 +284,16 @@ IOManager::~IOManager()
  // 새블럭 생성
  int8_t IOManager::processInsert(InsertDirectoryRequestInfo* reqInfo)
  {
-/*
+
      DebugLog("INSERT_DIRECTORY - key : %s", reqInfo->key.c_str());
- 
+     
+     // 디스크에 실제로 써보는거 테스코드
+ //    KVDBServer::getInstance()->m_diskManager->writeDisk()(blockAdr, block));
+     
+     
+     
+     
+ /*
      componentList.clear();
      insertBufferCacheDataMap.clear();
      namedCacheDataList.clear();
@@ -580,7 +585,7 @@ IOManager::~IOManager()
      std::string item;
      
      while (std::getline(ss, item, delim))
-     elems.push_back(item);
+         elems.push_back(item);
      
      return elems;
  }
