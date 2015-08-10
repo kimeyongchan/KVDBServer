@@ -2,7 +2,7 @@
 #define __WORKER_THREAD_H__
 
 #include <pthread.h>
-#include <list>
+#include <deque>
 
 class ConnectInfo;
 class DataPacket;
@@ -35,7 +35,7 @@ private:
     pthread_t tid;
 	pthread_mutex_t mutex;
     pthread_cond_t cond;
-    std::list<DataPacket*> dataPacketQueue;
+    std::deque<DataPacket*> dataPacketQueue;
 };
 
 #endif //__WORKER_THREAD_H__

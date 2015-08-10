@@ -19,7 +19,8 @@ bool WorkerThread::Initialize()
 {
 	pthread_mutex_init(&mutex, NULL);
     pthread_cond_init(&cond, NULL);
-    dataPacketQueue.clear();
+    if(dataPacketQueue.empty() == false)
+        dataPacketQueue.clear();
     
 	return true;
 }
@@ -57,9 +58,10 @@ DataPacket* WorkerThread::PopDataPacket()
 {
     Lock();
     
-    DataPacket* dp = dataPacketQueue.front();
-    if (dp != NULL)
+    DataPacket* dp = NULL;
+    if (dataPacketQueue.empty() == false)
     {
+        dp = dataPacketQueue.front();
         dataPacketQueue.pop_front();
         UnLock();
     }
