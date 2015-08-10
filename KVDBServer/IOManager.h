@@ -4,7 +4,7 @@
 #include <vector>
 #include "WorkerThread.h"
 
-
+class RequestInfo;
 class InsertRequestInfo;
 class InsertDirectoryRequestInfo;
 class FindRequestInfo;

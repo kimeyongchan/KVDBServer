@@ -40,11 +40,6 @@ bool XmlData::loadServerInfoList()
     serverInfoList[1].serverModule = SERVER_MODULE_CLIENT;
     memcpy(serverInfoList[1].ip, "127.0.0.1", 9);
     serverInfoList[1].port = 3307;
-    /*
-    serverInfoList[2].serverType = SERVER_TYPE_SERVER;
-    serverInfoList[2].serverModule = SERVER_MODULE_CLIENT;
-    memcpy(serverInfoList[2].ip, "127.0.0.1", 9);
-    serverInfoList[2].port = 20120;
-    */
+
     return true;
 }

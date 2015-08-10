@@ -4,20 +4,19 @@
 
 #include <stdInt.h>
 #include <netinet/in.h>
-
 #include <sys/types.h>
 #include <sys/event.h>
 #include <sys/time.h>
 #include <deque>
 
 #include "BasicDefines.h"
+#include "WorkerThread.h"
 
 #define MAX_IP_LEN 15
 #define EVENT_BUFFER_SIZE 50
 #define MAX_CONNECT_SIZE 100
 #define RECV_BUF 5000
 
-class WorkerThread;
 
 typedef uint64_t dataSize_t;
 
@@ -45,11 +44,13 @@ struct DataPacket
     int dataSize;
 };
 
+
 enum SERVER_TYPE
 {
     SERVER_TYPE_SERVER = 0,
     SERVER_TYPE_CLIENT,
 };
+
 
 enum IS_PROCESSING
 {

@@ -128,8 +128,16 @@ bool Network::Initialize(const NetworkInfo* _networkInfo, int _networkInfoCount,
             return false;
         }
         
+        workerThreadArray[i].tfd = i;
+        
+        EV_SET(&connectEvent, i+10, EVFILT_USER, EV_ADD | EV_ENABLE, NOTE_TRIGGER, 0, NULL);
+        
+        if (kevent(eventFd, &connectEvent, 1, NULL, 0, NULL) == -1)
+        {
+            ErrorLog("kevent init error");
+            break;
+        }
     }
-    
     
 	return true;
 }
@@ -478,6 +486,10 @@ void Network::ProcessEvent()
                     }
                 }
             }
+            else if(event[i].filter == EVFILT_USER)
+            {
+                DebugLog("fefe");
+            }
         }
     }
 }
@@ -510,6 +522,9 @@ void Network::sendDataToWorkerThread(ConnectInfo* const _connectInfo, const char
     }
     
     workerThreadArray[fitNum].PushDataPacket(dp);
+    
+ //   EV_SET(&connectEvent, 10, EVFILT_USER, EV_ENABLE,  NOTE_TRIGGER, 0, _connectInfo);
+ //   EV_SET( &event, m_eventId, EVFILT_USER, EV_ENABLE, NOTE_FFCOPY|NOTE_TRIGGER|0x1, 0, NULL )
     
     return ;
 
