@@ -249,9 +249,8 @@ bool IOManager::parsingQuery(const char* query, int queryLen, RequestInfo** pri)
 
 int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
 {
-    
-    DebugLog("INSERT - key : %s, value : %s ", reqInfo->key.c_str(), reqInfo->value.c_str());
-  
+   /*
+    // ======================================================= 테스트 코드 ==================================================
      // 예상 데이터    Key :  a/b   Value: hello 내지는 그냥  h
      // 디스크에 실제로 써보는거 테스코드
      componentList.clear();
@@ -267,7 +266,7 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
      data->setFormatType(FLAG_DIRECTORY_DATA);
      data->setKey(componentList[0]);
      
-     uint64_t aBlockAdr = rootBlockAdr + BLOCK_SIZE;
+     uint64_t aBlockAdr = rootBlockAdr + 8192;//BLOCK_SIZE;
      Block* aBlock = new Block();
      uint64_t aBlockFirstIndBlockAdr = aBlock->getFirstIndirectionBlockAdr(aBlockAdr);
      
@@ -295,16 +294,18 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
      // 더티된 블럭들 써준다.
      KVDBServer::getInstance()->diskManager->writeBlock(rootBlockAdr, rootBlock);
      KVDBServer::getInstance()->diskManager->writeBlock(aBlockAdr, aBlock);
-     
-     delete data;
+    
+  
      delete aBlock;
-     delete keyValData;
      delete rootBlock;
      
-     
+     DebugLog("INSERT - key : %s, value : %s ", reqInfo->key.c_str(), reqInfo->value.c_str());
     
+    // ======================================================= 테스트 코드 ==================================================
+    */
      
  /*
+     DebugLog("INSERT - key : %s, value : %s ", reqInfo->key.c_str(), reqInfo->value.c_str());
 
      componentList.clear();
      namedCacheDataList.clear();                         // 네임드캐시
@@ -718,8 +719,9 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
  {
      
  //    DebugLog("FIND - key : %s", reqInfo->key.c_str());
-     
-     
+  
+     /*
+    // ======================================================= 테스트 코드 ==================================================
      // 테스트 가져오기 코드   Key : a/b
      componentList.clear();
      componentList = split(reqInfo->key, '/');
@@ -749,8 +751,9 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
      delete rootBlock;
      
      DebugLog("FIND - key : %s, value : %s ", keyvalData->getKey().c_str(), keyvalData->getValue().c_str());
+     // ======================================================= 테스트 코드 ==================================================
      
-    
+    */
      
  /*
      componentList.clear();
