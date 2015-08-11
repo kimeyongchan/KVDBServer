@@ -26,7 +26,7 @@ DiskManager::~DiskManager()
 }
 
 
-bool DiskManager::initialize(const char* fileName, uint16_t blockSize, uint64_t diskSize) //if not exist disk
+bool DiskManager::initialize(const char* fileName, uint16_t blockSize, uint64_t diskSize, SuperBlock* superBlock) //if not exist disk
 {
     char filePath[1000] = {0, };
     memcpy(filePath, __FILE__, strlen(__FILE__));
@@ -50,8 +50,6 @@ bool DiskManager::initialize(const char* fileName, uint16_t blockSize, uint64_t 
     }
     
     lseek(fd, 0, SEEK_SET);
-    
-    superBlock = new SuperBlock();
     
     /////////////////////////// set block size
     
@@ -113,6 +111,20 @@ bool DiskManager::initialize(const char* fileName, uint16_t blockSize, uint64_t 
     }
     
     superBlock->setRootBlockAddress(rootBlockAddress);
+    
+    
+    ////////////////////////// set root
+    
+    Block* rootBlock = new Block();
+    
+    if(readBlock(rootBlockAddress, rootBlock) == false)
+    {
+        ErrorLog("root block read error");
+        return false;
+    }
+    
+    superBlock->setRootBlock(rootBlock);
+
     
 
     return true;
@@ -349,6 +361,8 @@ bool DiskManager::readBlock(uint64_t blockAddress, Block *block)
                 ErrorLog("insertData error");
                 return false;
             }
+            
+            countDiskInd++;
         }
     }
     

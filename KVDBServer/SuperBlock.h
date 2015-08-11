@@ -14,6 +14,8 @@ private:
     char* usingBlockBitArray;
     int64_t rootBlockAddress;
     Block* rootBlock;
+
+    bool isDirty;
     
 public:
     
@@ -70,6 +72,17 @@ public:
     Block* getRootBlock()
     {
         return rootBlock;
+    }
+    
+    
+    void setDirty(bool dirtyState)
+    {
+        isDirty = dirtyState;
+    }
+    
+    bool getDirty()
+    {
+        return isDirty;
     }
 };
 
