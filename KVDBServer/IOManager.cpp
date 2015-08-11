@@ -720,7 +720,7 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
      
  //    DebugLog("FIND - key : %s", reqInfo->key.c_str());
   
-     /*
+   /*
     // ======================================================= 테스트 코드 ==================================================
      // 테스트 가져오기 코드   Key : a/b
      componentList.clear();
@@ -747,10 +747,12 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
      KeyValueData* keyvalData = (KeyValueData*)findData;
      
      
-     delete aBlock;
-     delete rootBlock;
+   
      
      DebugLog("FIND - key : %s, value : %s ", keyvalData->getKey().c_str(), keyvalData->getValue().c_str());
+     
+     delete aBlock;
+     delete rootBlock;
      // ======================================================= 테스트 코드 ==================================================
      
     */
@@ -921,6 +923,18 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
  bool IOManager::compaction(Block* block)
  {
      
+     // 블락 인다이렉션 돌면서 가장 큰 오프셋 순으로 데이터를 반환한다.
+     std::vector<uint16_t> offsetList;
+     
+     block->getLargestOffset(BLOCK_SIZE);
+     
+     int limitOffset = BLOCK_SIZE;
+     for(int i = 0; i < block->getIndirectionDataMapSize(); ++i)
+     {
+         uint16_t offset = block->getLargestOffset(limitOffset);
+         offsetList.push_back(offset);
+         limitOffset = offset;
+     }
      
      
      

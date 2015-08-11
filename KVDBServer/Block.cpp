@@ -135,6 +135,20 @@ uint16_t Block::getNewOffset(uint16_t dataSize)
     return newOffset;
 }
 
+
+uint16_t Block::getLargestOffset(uint16_t limitValue)
+{
+    int maximum =0;
+    for(auto iter = indirectionDataMap.begin(); iter != indirectionDataMap.end(); ++iter )
+    {
+        uint16_t curOffset = iter->second->offset;
+        if((curOffset > maximum) && (curOffset <limitValue))
+            maximum = curOffset;
+    }
+    
+    return maximum;
+}
+
 uint16_t Block::getNewIndirectionNumber()
 {
     int i =0;

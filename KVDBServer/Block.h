@@ -122,6 +122,7 @@ public:
     
     uint64_t getIndirectionBlockAdr(uint64_t blockAdr, uint16_t indirectionNumber);
     uint16_t getNewOffset(uint16_t dataSize);
+    uint16_t getLargestOffset(uint16_t limitValue);
     uint16_t getNewIndirectionNumber();
     int16_t getLastIndirectionNumber()
     {
@@ -135,6 +136,13 @@ public:
         
         return lastIndirectionNumber;
     }
+    
+    uint16_t getIndirectionDataMapSize()
+    {
+        return indirectionDataMap.size();
+    }
+    
+    
     
     
     const std::map<uint16_t, IndirectionData*>* getIndirectionDataMap() const
