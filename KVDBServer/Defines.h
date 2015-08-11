@@ -24,5 +24,9 @@ typedef uint32_t ValueLen_t;
 static const char* KVDB_PATH = "/Users/kimyongchan/Desktop/KVDBServer/kvdb.bin";
 static const char* KVDB_LOG_PATH = "/Users/kimyongchan/Desktop/KVDBServer/kvdb_log.bin";
 
+//static const char* KVDB_PATH = "/Users/UJinSeo/Documents/git_projects/KVDBServer/kvdb.bin";
+//static const char* KVDB_LOG_PATH = "/Users/UJinSeo/Documents/git_projects/KVDBServer/kvdb_log.bin";
+
+
 
 #endif /* defined(__KVDBServer__Defines__) */
