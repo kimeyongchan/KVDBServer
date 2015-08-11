@@ -1,20 +1,17 @@
-#include "KVDBServer.h"
+#include "MasterServer.h"
 
 #include "Defines.h"
 #include "Network.h"
 #include "XmlData.h"
 #include "IOManager.h"
-#include "DiskManager.h"
-#include "LogBuffer.h"
-#include "LogFile.h"
 
 #include "Log.h"
 
 #define PORT 3307
 
-KVDBServer* KVDBServer::m_instance = NULL;
+MasterServer* MasterServer::m_instance = NULL;
 
-bool KVDBServer::Initialize(int workerThreadCount)
+bool MasterServer::Initialize(int workerThreadCount)
 {
     log = new Log();
     if (log->Initialize(".") == false)
@@ -59,30 +56,11 @@ bool KVDBServer::Initialize(int workerThreadCount)
         ErrorLog("Network error");
         return false;
     }
-    
-    logBuffer = new LogBuffer();
-    if (logBuffer->initialize() == false)
-    {
-        return false;
-    }
-    
-    logFile = new LogFile();
-    if (logFile->initialize(KVDB_LOG_NAME) == false)
-    {
-        return false;
-    }
-    
-    diskManager = new DiskManager();
-    if (diskManager->initialize(KVDB_NAME, BLOCK_SIZE, DISK_SIZE) == false)
-    {
-        ErrorLog("diskManager error");
-        return false;
-    }
 
 	return true;
 }
 
-void KVDBServer::Run()
+void MasterServer::Run()
 {
 	while (true)
 	{

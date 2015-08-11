@@ -21,9 +21,21 @@ LogFile::LogFile()
 
 bool LogFile::initialize(const char* fileName)
 {
-    if ((fd = open(fileName, O_RDWR | O_SYNC)) < 0) // if not exist disk
+    char filePath[1000] = {0, };
+    memcpy(filePath, __FILE__, strlen(__FILE__));
+    for(int i = (int)strlen(filePath); i > 0; i--)
     {
-        if(createDisk(fileName) == false)
+        if(filePath[i] == '/')
+        {
+            memcpy(filePath + i + 1, fileName, strlen(fileName));
+            filePath[i+1+strlen(fileName)] = '\0';
+            break;
+        }
+    }
+        
+    if ((fd = open(filePath, O_RDWR | O_SYNC)) < 0) // if not exist disk
+    {
+        if(createDisk(filePath) == false)
         {
             ErrorLog("create Disk fail");
             return false;
