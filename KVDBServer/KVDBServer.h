@@ -4,7 +4,6 @@
 #include <stddef.h>
 
 class Network;
-class WorkerThread;
 class XmlData;
 class DiskManager;
 class Log;
