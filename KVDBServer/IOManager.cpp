@@ -920,6 +920,11 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
  
  bool IOManager::compaction(Block* block)
  {
+     
+     
+     
+     
+     
      return true;
  }
  
