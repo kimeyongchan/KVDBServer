@@ -1,121 +1,76 @@
-#include<list>
-#include<hash_map>
-#include<iostream>
+#include"bufferCache.h"
+
+#define MAXSIZE 10000
+
 using namespace std;
-#define BLOCKSIZE 8*1024
 
-struct Data
+Block* BufferCache::findBlock(unsigned __int64 ba) 
 {
-	struct dataInfo{
-		unsigned char type : 1; // 0 : folder,  1 : file
-		unsigned char chain : 1; // 0 : not chaining, 1 : chaining
-	}dInfo;  //1
-	unsigned char keyLen;  //1byte
-	unsigned __int32 valueLen;  //1byte
-	unsigned __int64 chaingAddr;  //1byte
-};
-
-class Block
-{
-public:  //private set, get function
-	struct BlockInfo{
-		unsigned char isDirty : 1;
-	}bkInfo;  //1
-
-	unsigned __int64 blockAddr; // physical address //8
-	unsigned __int16 remainSize;  //2 
-	list<unsigned __int16> idt;   // or realloc? //12
-	char arr[BLOCKSIZE]; //??  map
-
-public:
-	Block()
+	hash_map<unsigned __int64, Block*>::iterator it;
+	
+	for (it = this->bc.begin(); it != this->bc.end(); ++it)
 	{
-		bkInfo.isDirty = 1; // 0 : pure -> not need to write, 1: should write 
-		blockAddr = 0;   // memory addr?
-		remainSize = BLOCKSIZE;
-		memset(arr, 0, BLOCKSIZE);
-		this->idt.clear();
+		return it->second;
 	}
 
-	Block(/*int type, int chain, */int isDirty, unsigned __int64 blockAddr, unsigned __int16 remainSize,/* unsigned __int64 chainAddr, */list<unsigned __int16> idt)  //load
-	{
-		bkInfo.isDirty = isDirty;
-		blockAddr = blockAddr;
-		remainSize = remainSize;
-		this->idt = idt;
-	}
-};
-
-class BufferCache
-{
-private:
-	hash_map<unsigned __int64, Block> bcMap;
-	__int32 count;
-	list<Block> dirtyList;
-public:
-	BufferCache()
-	{
-		count = 0;
-	}
-
-	void insertBlock(unsigned __int64 ba, Block bk)
-	{
-
-		// check how many blocks exists
-		if (count < 1000)
-		{
-			bcMap.insert(make_pair(ba, bk));
-			count++;
-		}
-		else;
-			//  arrange block
-	}
-
-	void insertData(unsigned __int64 ba, string component, char* value)
-	{
-		Block* blk = findBlock(ba);
-		if (blk->remainSize > sizeof(*value))
-		{
-			//idt -> 키 확인 len 확인 
-			//set dirty
-
-		}
-		else
-		{
-			//new block 할당
-		}
+	return NULL;
 }
 
-	Block* findBlock(unsigned __int64 ba)
-	{
-		hash_map<unsigned __int64, Block>::iterator it =bcMap.find(ba);
-
-		if (it == bcMap.end())
-			return NULL;
-		return &(it->second);
-
-	}
-
-	bool deleteData(unsigned __int64 ba, string key);
-	bool deleteData(string Key);
-	bool arrangeDirty();
-
-
-};
-
-int main()
+bool BufferCache::insertBlock2Cache(unsigned __int64 ba, Block* blk)
 {
-	BufferCache bc;
-	Block* bk = new Block();
-	bc.insertBlock(0x10000000000, *bk);
-	Block* bk1 =  bc.findBlock(0x10000000000);
-	
-	if (bk1 == NULL)
+	if (this->bc.size() < MAXSIZE)
 	{
-		cout << "here" << endl;
+		this->que.insertQueue(ba);
+		this->bc.insert(hash_map<unsigned __int64, Block*>::value_type(ba, blk));
+		return true;
 	}
-	else 
-		cout << bk1->blockAddr<< endl;
+	else
+	{
+		return false;  //MAXSIZE
+	}
+}
 
-	return 0;
+
+bool BufferCache::getDeleteBlock(unsigned __int64& rtba,Block& rtblk)  //arrange : ba, block
+{
+	unsigned __int64 ba	= this->que.getFront();
+	Block* temp = findBlock(ba);
+
+	if (temp->getDirty())
+	{
+		rtba = ba;
+		rtblk = *temp;
+		return true; //dirty Block
+	}
+	else
+	{
+		this->que.remove(ba);
+		delete temp;
+		this->bc.erase(ba);
+		return false; //dirty가 아닌건 그냥 해제
+	}
+}
+
+
+unsigned __int64 BufferCache::newBlock()
+{
+	for (int i = 0; i < BLOCKCOUNT; i++)
+	{
+		if (this->dbt.usingDescriptor[i].blkUsing == 0)
+		{
+			return i*BLOCKSIZE;
+		}
+	}
+
+	return NULL;  //할당할 수 없음
+}
+void BufferCache::deleteDirty(unsigned __int64 ba)
+{
+
+	//que에서 빼고
+	this->que.remove(ba);
+	delete this->findBlock(ba);
+	//cache에서 빼고
+	this->bc.erase(ba);
+
 }

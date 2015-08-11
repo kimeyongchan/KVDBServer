@@ -5,7 +5,7 @@
 
 class Network;
 class WorkerThread;
-class RequestInfo;
+class XmlData;
 class DiskManager;
 class Log;
 class LogBuffer;
@@ -27,18 +27,14 @@ public:
 public:
 	bool Initialize(int workerThreadCount);
 	void Run();
-    
-    void SendWorkToWorkerThread(RequestInfo* ri);
-//    WorkerThread* GetWorkerThreadArray() { return m_workerThreadArray; }
 
 public:
-	Network* m_network;
-	Log* m_log;
-	WorkerThread* m_workerThreadArray;
-    DiskManager* m_diskManager;
-    LogBuffer* m_logBuffer;
-    LogFile* m_logFile;
-    int m_workerThreadCount;
+	Network* network;
+	Log* log;
+    XmlData* xmlData;
+    DiskManager* diskManager;
+    LogBuffer* logBuffer;
+    LogFile* logFile;
 };
 
 #endif //__K_V_D_B_SERVER_H__

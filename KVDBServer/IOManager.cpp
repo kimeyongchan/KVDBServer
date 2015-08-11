@@ -1,4 +1,5 @@
 #include "IOManager.h"
+#include "XmlData.h"
 #include "RequestInfo.h"
 #include "Log.h"
 #include "LogBuffer.h"
@@ -12,6 +13,7 @@
 #include "Defines.h"
 #include "DiskManager.h"
 #include "SuperBlock.h"
+#include "Network.h"
 
 IOManager::IOManager()
 {
@@ -23,20 +25,240 @@ IOManager::~IOManager()
 }
 
 
- 
- // 기존 블럭 쓰거나, 체이닝할때 새블럭 할당
- int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
- {
-     ///DebugLog("INSERT - key : %s, value : %s ", reqInfo->key.c_str(), reqInfo->value.c_str());
-     
-     
+void IOManager::receiveData(const ConnectInfo* connectInfo, const char* data, int dataSize)
+{    
+    if(connectInfo->serverModule == SERVER_MODULE_MASTER)
+    {
+        receiveMasterData(connectInfo, data, dataSize);
+    }
+    else if(connectInfo->serverModule == SERVER_MODULE_CLIENT)
+    {
+        receiveClientData(connectInfo, data, dataSize);
+    }
+    else
+    {
+        ErrorLog("invalid server module - %d", connectInfo->serverModule);
+    }
+}
+
+
+void IOManager::receiveClientData(const ConnectInfo* connectInfo, const char* data, int dataSize)
+{
+    RequestInfo* requestInfo;
+    
+    if(parsingQuery(data, dataSize, &requestInfo) == false)
+    {
+        ErrorLog("parsing error");
+        return ;
+    }
+    
+    switch (requestInfo->type) {
+        case INSERT_REQUEST:
+        {
+            InsertRequestInfo * iri = (InsertRequestInfo*)requestInfo;
+            processInsert(iri);
+            delete iri;
+            break;
+        }
+        case INSERT_DIRECTORY_REQUEST:
+        {
+            InsertDirectoryRequestInfo * idri = (InsertDirectoryRequestInfo*)requestInfo;
+            processInsert(idri);
+            delete idri;
+            break;
+        }
+        case FIND_REQUEST:
+        {
+            FindRequestInfo * fri = (FindRequestInfo*)requestInfo;
+            processFind(fri);
+            delete fri;
+            break;
+        }
+        case DELETE_REQUEST:
+        {
+            DeleteRequestInfo * dri = (DeleteRequestInfo*)requestInfo;
+            processDelete(dri);
+            delete dri;
+            break;
+        }
+        default:
+        {
+            ErrorLog("type - %d", requestInfo->type);
+            break;
+        }
+    }
+    
+    KVDBServer::getInstance()->network->sendData(tfd, connectInfo, "fefe", 4);
+}
+
+
+void IOManager::receiveMasterData(const ConnectInfo* connectInfo, const char* data, int dataSize)
+{
+    
+}
+
+bool IOManager::parsingQuery(const char* query, int queryLen, RequestInfo** pri) // pasing query to requestInfo
+{
+    std::string queryString(query, queryLen);
+    
+    std::size_t findTypeLength = queryString.find_first_of('(');
+    
+    if(findTypeLength == std::string::npos)
+    {
+        return false;
+    }
+    
+    std::size_t findDataLength = queryString.find_first_of(')');
+    
+    
+    if(queryString.substr(findDataLength+ 1).compare(";") != 0)
+    {
+        return false;
+    }
+    
+    if(findDataLength == std::string::npos)
+    {
+        return false;
+    }
+    
+    if(findTypeLength + 2 >= findDataLength)
+    {
+        return false;
+    }
+    std::string ee = queryString.substr(findTypeLength + 1, 1);
+    if(queryString.substr(findTypeLength + 1, 1).compare("\"") != 0
+       || queryString.substr(findDataLength + -1, 1).compare("\"") != 0)
+    {
+        ErrorLog("\" error ");
+        return false;
+    }
+    
+    std::string typeString = queryString.substr(0, findTypeLength);
+    std::string dataString = queryString.substr(findTypeLength + 1, findDataLength - findTypeLength - 1);
+    
+    if(typeString.compare("insert") == 0) // insert
+    {
+        std::size_t findDQM = dataString.find_first_of('"', 1);
+        
+        std::string firstString = dataString.substr(1, findDQM - 1);
+        
+        if(firstString.empty())
+        {
+            return false;
+        }
+        
+        if(dataString.substr(findDQM + 1, 2).compare(",\"") == 0) // file insert
+        {
+            std::size_t findDQM2 = dataString.find_first_of('"', findDQM + 3);
+            
+            if(findDQM2 == std::string::npos)
+            {
+                return false;
+            }
+            
+            std::string secondString = dataString.substr(findDQM + 3, findDQM2 - findDQM - 3);
+            
+            if(secondString.empty())
+            {
+                return false;
+            }
+            
+            if (dataString.length() != findDQM2 + 1)
+            {
+                return false;
+            }
+            
+            InsertRequestInfo* iri = new InsertRequestInfo();
+            iri->key = firstString.substr();
+            iri->value = secondString.substr();
+            
+            *pri = iri;
+            
+            return true;
+            
+        }
+        else if(dataString.length() == findDQM + 1) //directory insert
+        {
+            InsertDirectoryRequestInfo* idri = new InsertDirectoryRequestInfo();
+            idri->key = firstString.substr();
+            
+            *pri = idri;
+            
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    else if(typeString.compare("find") == 0) // find
+    {
+        std::size_t findDQM = dataString.find_first_of('"', 1);
+        
+        std::string firstString = dataString.substr(1, findDQM - 1);
+        
+        if(firstString.empty())
+        {
+            return false;
+        }
+        
+        if(dataString.length() != findDQM + 1)
+        {
+            return false;
+        }
+        
+        FindRequestInfo* fri = new FindRequestInfo();
+        fri->key = firstString.substr();
+        
+        *pri = fri;
+        
+        return true;
+    }
+    else if(typeString.compare("delete") == 0) // delete
+    {
+        std::size_t findDQM = dataString.find_first_of('"', 1);
+        
+        std::string firstString = dataString.substr(1, findDQM - 1);
+        
+        if(firstString.empty())
+        {
+            return false;
+        }
+        
+        if(dataString.length() != findDQM + 1)
+        {
+            return false;
+        }
+        
+        DeleteRequestInfo* dri = new DeleteRequestInfo();
+        dri->key = firstString.substr();
+        
+        *pri = dri;
+        
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+    
+    return true;
+}
+
+
+
+int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
+{
+    
+    DebugLog("INSERT - key : %s, value : %s ", reqInfo->key.c_str(), reqInfo->value.c_str());
+  
      // 예상 데이터    Key :  a/b   Value: hello 내지는 그냥  h
      // 디스크에 실제로 써보는거 테스코드
      componentList.clear();
      componentList = split(reqInfo->key, '/');
      
      // 루트블럭 가져오기
-     SuperBlock* superBlock = KVDBServer::getInstance()->m_diskManager->superBlock;
+     SuperBlock* superBlock = KVDBServer::getInstance()->diskManager->superBlock;
      uint64_t rootBlockAdr = superBlock->getRootBlockAddress();
      Block* rootBlock = new Block();
      
@@ -71,8 +293,8 @@ IOManager::~IOManager()
      
      
      // 더티된 블럭들 써준다.
-     KVDBServer::getInstance()->m_diskManager->writeBlock(rootBlockAdr, rootBlock);
-     KVDBServer::getInstance()->m_diskManager->writeBlock(aBlockAdr, aBlock);
+     KVDBServer::getInstance()->diskManager->writeBlock(rootBlockAdr, rootBlock);
+     KVDBServer::getInstance()->diskManager->writeBlock(aBlockAdr, aBlock);
      
      delete data;
      delete aBlock;
@@ -80,9 +302,10 @@ IOManager::~IOManager()
      delete rootBlock;
      
      
-     
+    
      
  /*
+
      componentList.clear();
      namedCacheDataList.clear();                         // 네임드캐시
      insertBufferCacheDataMap.clear();                   // 버퍼캐시
@@ -502,9 +725,9 @@ IOManager::~IOManager()
      componentList = split(reqInfo->key, '/');
      
      // 루트블럭 가져오기
-     SuperBlock* superBlock = KVDBServer::getInstance()->m_diskManager->superBlock;
+     SuperBlock* superBlock = KVDBServer::getInstance()->diskManager->superBlock;
      Block* rootBlock = new Block();
-     KVDBServer::getInstance()->m_diskManager->readBlock(superBlock->getRootBlockAddress(), rootBlock);
+     KVDBServer::getInstance()->diskManager->readBlock(superBlock->getRootBlockAddress(), rootBlock);
      
      
      
@@ -516,7 +739,7 @@ IOManager::~IOManager()
      uint64_t aBlockAdr = ibaToBa(aIndirectionAddress);
      
      Block* aBlock = new Block();
-     KVDBServer::getInstance()->m_diskManager->readBlock(aBlockAdr, aBlock);
+     KVDBServer::getInstance()->diskManager->readBlock(aBlockAdr, aBlock);
      
      Data* findData= aBlock->getData(componentList[1]);
      KeyValueData* keyvalData = (KeyValueData*)findData;
@@ -676,7 +899,7 @@ IOManager::~IOManager()
  uint64_t IOManager::ibaToBa(uint64_t iba)
  {
      //uint64_t rootBlockAddress= KVDBServer::getInstance()->cacheMgr->getSuperBlock()->getRootBlockAddress();
-     uint64_t rootBlockAddress = KVDBServer::getInstance()->m_diskManager->superBlock->getRootBlockAddress();
+     uint64_t rootBlockAddress = KVDBServer::getInstance()->diskManager->superBlock->getRootBlockAddress();
      
      uint64_t distance = (iba - rootBlockAddress) % BLOCK_SIZE;
      uint64_t blockAddress = iba - distance;

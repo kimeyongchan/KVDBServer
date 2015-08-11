@@ -2,8 +2,10 @@
 #define __I_O_MANAGER_H__
 
 #include <vector>
+#include "WorkerThread.h"
 #include <map>
 
+class RequestInfo;
 class InsertRequestInfo;
 class InsertDirectoryRequestInfo;
 class FindRequestInfo;
@@ -59,11 +61,22 @@ public:
 };
 
 
-class IOManager
+class IOManager : public WorkerThread
 {
 public:
     IOManager();
     ~IOManager();
+
+    ////////////virtual method///////////////
+    void receiveData(const ConnectInfo* connectInfo, const char* data, int dataSize);
+    
+    
+    ////////////////////////////////////////
+    void receiveClientData(const ConnectInfo* connectInfo, const char* data, int dataSize);
+    void receiveMasterData(const ConnectInfo* connectInfo, const char* data, int dataSize);
+    bool parsingQuery(const char* query, int queryLen, RequestInfo** pri);
+
+    
     
 public:
     int8_t processInsert(InsertRequestInfo* reqInfo);
