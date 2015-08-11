@@ -5,8 +5,11 @@
 
 class Network;
 class WorkerThread;
-class RequestInfo;
+class XmlData;
+class DiskManager;
 class Log;
+class LogBuffer;
+class LogFile;
 
 class KVDBServer
 {
@@ -24,15 +27,14 @@ public:
 public:
 	bool Initialize(int workerThreadCount);
 	void Run();
-    
-    void SendWorkToWorkerThread(RequestInfo* ri);
-//    WorkerThread* GetWorkerThreadArray() { return m_workerThreadArray; }
 
-private:
-	Network* m_network;
-	Log* m_log;
-	WorkerThread* m_workerThreadArray;
-    int m_workerThreadCount;
+public:
+	Network* network;
+	Log* log;
+    XmlData* xmlData;
+    DiskManager* diskManager;
+    LogBuffer* logBuffer;
+    LogFile* logFile;
 };
 
 #endif //__K_V_D_B_SERVER_H__

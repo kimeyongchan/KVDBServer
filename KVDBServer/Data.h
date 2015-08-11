@@ -5,31 +5,41 @@
 #include <limits.h>
 #include <string>
 
-// 0: 폴더형 데이터 포맷,
-// 1: key/value 데이터포맷이면서 chaining 안함
-// 2: key/value 데이터포맷이면서 chaining 함
+
+#define FLAG_DIRECTORY_DATA             0// 0: 폴더형 데이터 포맷,
+#define FLAG_KEY_VALUE_DATA             1// 1: key/value 데이터포맷이면서 chaining 안함
+#define FLAG_KEY_VALUE_CHAINING_DATA    2 // 2: key/value 데이터포맷이면서 chaining 함
+
 
 class Data
 {
 protected:
-    int8_t m_formatFlag;
-    uint8_t m_keyLen;
-    std::string m_key;
+    int8_t      formatType;
+    //uint8_t     keyLen;
+    std::string key;
     
 public:
-    void setFormatFlag(int8_t flag)
+    
+    virtual ~Data(){}
+    
+    bool setFormatType(int8_t type)
     {
-        m_formatFlag = flag;
+        if(type > 2)
+            return false;
+        
+        formatType = type;
+        
+        return true;
     }
     
-    char getFormatFlag()
+    int8_t getFormatType() const
     {
-        return m_formatFlag;
+        return formatType;
     }
     
-    uint8_t getKeyLength()
+    uint8_t getKeyLength() const
     {
-        return m_keyLen;
+        return key.length();
     }
     
     bool setKey(std::string key)
@@ -37,12 +47,17 @@ public:
         if(key.length() > UINT8_MAX)
             return false;
         
-        m_keyLen = key.length();
-        m_key = key;
+        //keyLen = key.length();
+        this->key = key;
         return true;
     }
     
-    virtual uint16_t getDataSize() = 0;
+    std::string getKey() const
+    {
+        return key;
+    }
+    
+    virtual uint16_t getDataSize() const = 0;
 };
 
 #endif // __DATA_H__

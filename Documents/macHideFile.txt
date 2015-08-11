@@ -1,0 +1,4 @@
+defaults write com.apple.finder AppleShowAllFiles -bool true
+killall Finder
+
+/Users/kimyongchan/Desktop/KVDBServer

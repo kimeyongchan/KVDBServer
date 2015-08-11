@@ -1,10 +1,7 @@
 #include "WorkerThread.h"
-
-#include <unistd.h>
-
-#include "RequestInfo.h"
-#include "IOManager.h"
+#include "Network.h"
 #include "Log.h"
+#include <stdlib.h>
 
 WorkerThread::WorkerThread()
 {
@@ -13,102 +10,74 @@ WorkerThread::WorkerThread()
 
 WorkerThread::~WorkerThread()
 {
-	pthread_mutex_destroy(&m_mutex);
-    pthread_cond_destroy(&m_cond);
+	pthread_mutex_destroy(&mutex);
+    pthread_cond_destroy(&cond);
 	//ToDo. heap memory (in Queue) destory
 }
 
 bool WorkerThread::Initialize()
 {
-	pthread_mutex_init(&m_mutex, NULL);
-    pthread_cond_init(&m_cond, NULL);
-	m_requestInfoQueue.clear();
-
-    m_ioMgr = new IOManager();
+	pthread_mutex_init(&mutex, NULL);
+    pthread_cond_init(&cond, NULL);
+    dataPacketQueue = new std::deque<DataPacket*>();
+    dataPacketQueue->clear();
     
 	return true;
 }
+
 
 void WorkerThread::Run()
 {
 	while (true)
 	{
-		RequestInfo* requestInfo = PopRequestInfo();
-		if (requestInfo != NULL)
+		DataPacket* dp = PopDataPacket();
+		if (dp != NULL)
 		{
-            switch (requestInfo->type) {
-                case INSERT_REQUEST:
-                {
-                    InsertRequestInfo * iri = (InsertRequestInfo*)requestInfo;
-                    m_ioMgr->ProcessInsert(iri);
-                    delete iri;
-                    break;
-                }
-                case INSERT_DIRECTORY_REQUEST:
-                {
-                    InsertDirectoryRequestInfo * idri = (InsertDirectoryRequestInfo*)requestInfo;
-                    m_ioMgr->ProcessInsert(idri);
-                    delete idri;
-                    break;
-                }
-                case FIND_REQUEST:
-                {
-                    FindRequestInfo * fri = (FindRequestInfo*)requestInfo;
-                    m_ioMgr->ProcessFind(fri);
-                    delete fri;
-                    break;
-                }
-                case DELETE_REQUEST:
-                {
-                    DeleteRequestInfo * dri = (DeleteRequestInfo*)requestInfo;
-                    m_ioMgr->ProcessDelete(dri);
-                    delete dri;
-                    break;
-                }
-                default:
-                {
-                    ErrorLog("type - %d", requestInfo->type);
-                    break;
-                }
-            }
+            receiveData(dp->connectInfo, dp->data, dp->dataSize);
+            free(dp->data);
+            delete dp;
 		}
 	}
 }
 
-void WorkerThread::PushRequestInfo(RequestInfo* requestInfo)
+
+void WorkerThread::PushDataPacket(DataPacket* dataPacket)
 {
-	Lock();
-
-	m_requestInfoQueue.push_back(requestInfo);
+    Lock();
     
-    if(m_requestInfoQueue.size() == 1)
-        pthread_cond_signal(&m_cond);
-
-	UnLock();
+    dataPacketQueue->push_back(dataPacket);
+    
+    if(dataPacketQueue->size() == 1)
+        pthread_cond_signal(&cond);
+    
+    UnLock();
 }
 
-RequestInfo* WorkerThread::PopRequestInfo()
-{
-	Lock();
 
-	RequestInfo* ri = m_requestInfoQueue.front();
-	if (ri != NULL)
+DataPacket* WorkerThread::PopDataPacket()
+{
+    Lock();
+    
+    DataPacket* dp = NULL;
+    if (dataPacketQueue->empty() == false)
     {
-		m_requestInfoQueue.pop_front();
+        dp = dataPacketQueue->front();
+        dataPacketQueue->pop_front();
         UnLock();
     }
     else
     {
         UnLockAndWait();
     }
-
-	return ri;
+    
+    return dp;
 }
 
-int WorkerThread::GetRequestInfoCount()
+
+int WorkerThread::getDataPacketCount()
 {
     Lock();
-    int cnt = (int)m_requestInfoQueue.size();
+    int cnt = (int)dataPacketQueue->size();
     UnLock();
     return cnt;
 }

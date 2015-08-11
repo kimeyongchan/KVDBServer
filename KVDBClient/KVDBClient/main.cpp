@@ -27,9 +27,11 @@ int main(int argc, char *argv[])
         printf("connect error");
         return -1;
     }
-
-    KVDB_sendQuery(&conn, query); // 쿼리 보내기
-    
+//    for(int i=0 ; i < 2; i ++)
+//    {
+//        sleep(1);
+    KVDB_sendQuery(&conn, query, strlen(query)); // 쿼리 보내기
+//    }
     KVDB_close(&conn); // 디비와 연결 끊기
     
     return 0;

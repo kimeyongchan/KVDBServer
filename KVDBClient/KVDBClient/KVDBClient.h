@@ -21,6 +21,7 @@
 
 #define BUF_LEN 1023
 
+typedef uint64_t dataSize_t;
 
 struct KVDB
 {
@@ -61,9 +62,12 @@ void KVDB_close(KVDB* conn)
     close(conn->s);
 }
 
-void KVDB_sendQuery(KVDB* conn, const char* query)
+void KVDB_sendQuery(KVDB* conn, const char* query, dataSize_t queryLen)
 {
-    send(conn->s, query, strlen(query), NULL);
+    char wQuery[queryLen + sizeof(dataSize_t)];
+    memcpy(wQuery, &queryLen, sizeof(dataSize_t));
+    memcpy(wQuery + sizeof(dataSize_t), query, queryLen);
+    send(conn->s, wQuery, queryLen + sizeof(dataSize_t), NULL);
 }
 
 

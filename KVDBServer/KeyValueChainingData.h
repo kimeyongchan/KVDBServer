@@ -6,23 +6,27 @@
 class KeyValueChainingData : public KeyValueData
 {
 protected:
-    int64_t m_indBlockAddress;
+    int64_t indBlockAddress;
     
 public:
+    
+    virtual ~KeyValueChainingData(){}
+    
     void setIndBlockAddress(int64_t indBlockAddress)
     {
-        m_indBlockAddress = indBlockAddress;
+        this->indBlockAddress = indBlockAddress;
     }
     
-    long  getIndBlockAddress()
+    int64_t  getIndBlockAddress() const
     {
-        return m_indBlockAddress;
+        return indBlockAddress;
     }
     
     // virtual 함수 구현
-    uint16_t getDataSize()
+    uint16_t getDataSize() const
     {
-        return (uint16_t)(sizeof(m_formatFlag) + sizeof(m_keyLen) + m_keyLen + sizeof(m_valueLen) + m_valueLen+ sizeof(m_indBlockAddress));
+        return (uint16_t)( sizeof(formatType) + sizeof(int8_t)/*키사이즈*/ + key.size()
+                          + sizeof(int32_t)/*밸류사이즈*/ + value.size() + sizeof(indBlockAddress) );
     }
 };
 
