@@ -11,6 +11,8 @@
 #include "KVDBServer.h"
 #include <sstream>
 #include "Defines.h"
+#include "DiskManager.h"
+#include "SuperBlock.h"
 #include "Network.h"
 
 IOManager::IOManager()
@@ -249,14 +251,60 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
 {
     
     DebugLog("INSERT - key : %s, value : %s ", reqInfo->key.c_str(), reqInfo->value.c_str());
-   
-    /*
-     const NamedData* nd = namedCache->findND(component, NamedData); // for
- 
- // 기존 블럭 쓰거나, 체이닝할때 새블럭 할당
- int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
- {
-     DebugLog("INSERT - key : %s, value : %s ", reqInfo->key.c_str(), reqInfo->value.c_str());
+  
+     // 예상 데이터    Key :  a/b   Value: hello 내지는 그냥  h
+     // 디스크에 실제로 써보는거 테스코드
+     componentList.clear();
+     componentList = split(reqInfo->key, '/');
+     
+     // 루트블럭 가져오기
+     SuperBlock* superBlock = KVDBServer::getInstance()->diskManager->superBlock;
+     uint64_t rootBlockAdr = superBlock->getRootBlockAddress();
+     Block* rootBlock = new Block();
+     
+     // 루트블럭에 넣을 디렉터리를 만든다.
+     DirectoryData* data = new DirectoryData();
+     data->setFormatType(FLAG_DIRECTORY_DATA);
+     data->setKey(componentList[0]);
+     
+     uint64_t aBlockAdr = rootBlockAdr + BLOCK_SIZE;
+     Block* aBlock = new Block();
+     uint64_t aBlockFirstIndBlockAdr = aBlock->getFirstIndirectionBlockAdr(aBlockAdr);
+     
+     data->setIndBlockAddress(aBlockFirstIndBlockAdr);
+     
+     // 루트블럭에 디렉터리 데이터를 넣어준다.
+     uint16_t dataSize = data->getDataSize();
+     uint16_t newOffset = rootBlock->getNewOffset(dataSize);
+     rootBlock->insertData(rootBlock->getNewIndirectionNumber(), newOffset, data);
+     
+     // a블럭에 실제 b데이터 insert한다.
+        // b 키벨류 데이터를 만든다.
+     
+     KeyValueData* keyValData = new KeyValueData();
+     keyValData->setFormatType(FLAG_KEY_VALUE_DATA);
+     keyValData->setKey(componentList[1]);
+     keyValData->setValue(reqInfo->value);
+     
+     
+        // a 블럭에 정보를 넣어준다.
+     uint16_t aBlockNewOffset = aBlock->getNewOffset(keyValData->getDataSize());
+     aBlock->insertData(aBlock->getNewIndirectionNumber(), aBlockNewOffset, keyValData);
+     
+     
+     // 더티된 블럭들 써준다.
+     KVDBServer::getInstance()->diskManager->writeBlock(rootBlockAdr, rootBlock);
+     KVDBServer::getInstance()->diskManager->writeBlock(aBlockAdr, aBlock);
+     
+     delete data;
+     delete aBlock;
+     delete keyValData;
+     delete rootBlock;
+     
+     
+    
+     
+ /*
 
      componentList.clear();
      namedCacheDataList.clear();                         // 네임드캐시
@@ -517,12 +565,6 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
 
      DebugLog("INSERT_DIRECTORY - key : %s", reqInfo->key.c_str());
      
-     // 디스크에 실제로 써보는거 테스코드
- //    KVDBServer::getInstance()->m_diskManager->writeDisk()(blockAdr, block));
-     
-     
-     
-     
  /*
      componentList.clear();
      insertBufferCacheDataMap.clear();
@@ -674,9 +716,43 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
  
  void IOManager::processFind(FindRequestInfo* reqInfo)
  {
-     /*
-     DebugLog("FIND - key : %s", reqInfo->key.c_str());
      
+ //    DebugLog("FIND - key : %s", reqInfo->key.c_str());
+     
+     
+     // 테스트 가져오기 코드   Key : a/b
+     componentList.clear();
+     componentList = split(reqInfo->key, '/');
+     
+     // 루트블럭 가져오기
+     SuperBlock* superBlock = KVDBServer::getInstance()->diskManager->superBlock;
+     Block* rootBlock = new Block();
+     KVDBServer::getInstance()->diskManager->readBlock(superBlock->getRootBlockAddress(), rootBlock);
+     
+     
+     
+     // 루트블럭 으로 부터 디렉터리 데이터 가져오기
+     Data* data = rootBlock->getData(componentList[0]);
+     DirectoryData* dirData =(DirectoryData*)data;
+     uint64_t aIndirectionAddress = dirData->getIndBlockAddress();
+     
+     uint64_t aBlockAdr = ibaToBa(aIndirectionAddress);
+     
+     Block* aBlock = new Block();
+     KVDBServer::getInstance()->diskManager->readBlock(aBlockAdr, aBlock);
+     
+     Data* findData= aBlock->getData(componentList[1]);
+     KeyValueData* keyvalData = (KeyValueData*)findData;
+     
+     
+     delete aBlock;
+     delete rootBlock;
+     
+     DebugLog("FIND - key : %s, value : %s ", keyvalData->getKey().c_str(), keyvalData->getValue().c_str());
+     
+    
+     
+ /*
      componentList.clear();
      insertBufferCacheDataMap.clear();
      namedCacheDataList.clear();
@@ -819,16 +895,18 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
      
      return elems;
  }
- /*
+
  uint64_t IOManager::ibaToBa(uint64_t iba)
  {
-     uint64_t rootBlockAddress= KVDBServer::getInstance()->cacheMgr->getSuperBlock()->getRootBlockAddress();
+     //uint64_t rootBlockAddress= KVDBServer::getInstance()->cacheMgr->getSuperBlock()->getRootBlockAddress();
+     uint64_t rootBlockAddress = KVDBServer::getInstance()->diskManager->superBlock->getRootBlockAddress();
+     
      uint64_t distance = (iba - rootBlockAddress) % BLOCK_SIZE;
      uint64_t blockAddress = iba - distance;
  
      return blockAddress;
  }
- */
+
  uint16_t IOManager::ibaToOffsetIdx(uint64_t iba, uint64_t ba)
  {
      uint8_t  headerSize = Block::getBlockHeaderSize();

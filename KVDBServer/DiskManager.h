@@ -10,6 +10,8 @@ const int BLOCK_HEADER_SIZE = sizeof(uint16_t) + sizeof(uint16_t) + sizeof(int64
 
 class DiskManager
 {
+public:
+        SuperBlock* superBlock;
 
 public:
     DiskManager();
@@ -28,7 +30,7 @@ private:
     
 private:
     int fd;
-    SuperBlock* superBlock;
+
     
 };
 

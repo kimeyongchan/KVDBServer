@@ -124,7 +124,15 @@ public:
     uint16_t getNewIndirectionNumber();
     uint16_t getLastIndirectionNumber()
     {
-        return indirectionDataMap.rbegin()->first;
+        uint16_t lastIndirectionNumber =0;
+        
+        for(auto iter = indirectionDataMap.begin(); iter != indirectionDataMap.end(); ++iter)
+        {
+            if(iter->first > lastIndirectionNumber)
+                lastIndirectionNumber = iter->first;
+        }
+
+        return lastIndirectionNumber;
     }
     
     
