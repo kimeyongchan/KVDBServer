@@ -6,6 +6,25 @@
 #include "Defines.h"
 
 
+Block::~Block()
+{
+    for(auto iter = indirectionDataMap.begin(); iter != indirectionDataMap.end(); ++iter)
+    {
+        if(iter->second->data != NULL)
+        {
+            delete iter->second->data;
+            iter->second->data = NULL;
+        }
+        
+        if(iter->second != NULL)
+        {
+            delete iter->second;
+            iter->second = NULL;
+        }
+        
+    }
+}
+
 bool Block::insertData(uint16_t idx, uint16_t offset, Data* data)
 {
     if(data == NULL)
@@ -21,7 +40,7 @@ bool Block::insertData(uint16_t idx, uint16_t offset, Data* data)
     
     IndirectionData* iData = new IndirectionData(offset, data);
     
-    uint16_t lastIndirectionIdx = getLastIndirectionNumber();
+    int16_t lastIndirectionIdx = getLastIndirectionNumber();
     
     indirectionDataMap.insert(std::pair<uint16_t, IndirectionData*>(idx, iData));
     
@@ -51,10 +70,16 @@ bool Block::deleteData(uint16_t idx)
     
     
     if(iter->second->data != NULL)
+    {
         delete iter->second->data;
+        iter->second->data = NULL;
+    }
     
     if(iter->second != NULL)
+    {
         delete iter->second;
+        iter->second = NULL;
+    }
     
     
     indirectionDataMap.erase(iter);

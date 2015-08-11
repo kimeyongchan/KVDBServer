@@ -27,12 +27,11 @@ private:
     
     uint16_t  indirectionCnt;   // 0~65535개 , 인다이렉션 개수
     uint16_t  freeSpace ;       //  블럭 잔여량  (8k = 8192byte)
-    uint64_t   chainingAddress;  // 블럭 체이닝 주소
+    uint64_t  chainingAddress;  // 블럭 체이닝 주소
     
     std::map<uint16_t, IndirectionData*> indirectionDataMap; //  <인디렉션넘버, indirectionData>
     bool isDirty;
  
-    
     void increaseIndirectionCnt()
     {
         ++indirectionCnt;
@@ -52,6 +51,8 @@ public:
         indirectionDataMap.clear();
         isDirty = true;
     }
+    
+    ~Block();
     
     static uint8_t getBlockHeaderSize()
     {
@@ -122,16 +123,16 @@ public:
     uint64_t getIndirectionBlockAdr(uint64_t blockAdr, uint16_t indirectionNumber);
     uint16_t getNewOffset(uint16_t dataSize);
     uint16_t getNewIndirectionNumber();
-    uint16_t getLastIndirectionNumber()
+    int16_t getLastIndirectionNumber()
     {
-        uint16_t lastIndirectionNumber =0;
+        int16_t lastIndirectionNumber = -1;
         
         for(auto iter = indirectionDataMap.begin(); iter != indirectionDataMap.end(); ++iter)
         {
             if(iter->first > lastIndirectionNumber)
                 lastIndirectionNumber = iter->first;
         }
-
+        
         return lastIndirectionNumber;
     }
     
