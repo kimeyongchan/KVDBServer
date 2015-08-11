@@ -257,7 +257,7 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
      componentList = split(reqInfo->key, '/');
      
      // 루트블럭 가져오기
-     SuperBlock* superBlock = KVDBServer::getInstance()->diskManager->superBlock;
+     SuperBlock* superBlock = KVDBServer::getInstance()->superBlock;
      uint64_t rootBlockAdr = superBlock->getRootBlockAddress();
      Block* rootBlock = new Block();
      
@@ -727,7 +727,7 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
      componentList = split(reqInfo->key, '/');
      
      // 루트블럭 가져오기
-     SuperBlock* superBlock = KVDBServer::getInstance()->diskManager->superBlock;
+     SuperBlock* superBlock = KVDBServer::getInstance()->superBlock;
      Block* rootBlock = new Block();
      KVDBServer::getInstance()->diskManager->readBlock(superBlock->getRootBlockAddress(), rootBlock);
      
@@ -902,7 +902,7 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
  uint64_t IOManager::ibaToBa(uint64_t iba)
  {
      //uint64_t rootBlockAddress= KVDBServer::getInstance()->cacheMgr->getSuperBlock()->getRootBlockAddress();
-     uint64_t rootBlockAddress = KVDBServer::getInstance()->diskManager->superBlock->getRootBlockAddress();
+     uint64_t rootBlockAddress = KVDBServer::getInstance()->superBlock->getRootBlockAddress();
      
      uint64_t distance = (iba - rootBlockAddress) % BLOCK_SIZE;
      uint64_t blockAddress = iba - distance;

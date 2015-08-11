@@ -7,6 +7,7 @@
 #include "DiskManager.h"
 #include "LogBuffer.h"
 #include "LogFile.h"
+#include "SuperBlock.h"
 
 #include "Log.h"
 
@@ -72,8 +73,10 @@ bool KVDBServer::Initialize(int workerThreadCount)
         return false;
     }
     
+    superBlock = new SuperBlock();
+    
     diskManager = new DiskManager();
-    if (diskManager->initialize(KVDB_NAME, BLOCK_SIZE, DISK_SIZE) == false)
+    if (diskManager->initialize(KVDB_NAME, BLOCK_SIZE, DISK_SIZE, superBlock) == false)
     {
         ErrorLog("diskManager error");
         return false;
