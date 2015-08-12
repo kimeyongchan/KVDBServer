@@ -250,7 +250,7 @@ bool IOManager::parsingQuery(const char* query, int queryLen, RequestInfo** pri)
 int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
 {
    /*
-    // ======================================================= 테스트 코드 ==================================================
+    // ======================================================= 우리가 한번쯤 짚고 가야할 점 ㅋ==================================================
      // 예상 데이터    Key :  a/b   Value: hello 내지는 그냥  h
      // 디스크에 실제로 써보는거 테스코드
      componentList.clear();
@@ -922,11 +922,8 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
  
  bool IOManager::compaction(Block* block)
  {
-     
-     // 블락 인다이렉션 돌면서 가장 큰 오프셋 순으로 데이터를 반환한다.
+     // 블락 인다이렉션 돌면서 가장 큰 오프셋 순으로 인다이렉션 넘버를 데이터를 반환한다.
      std::vector<uint16_t> offsetList;
-     
-     block->getLargestOffset(BLOCK_SIZE);
      
      int limitOffset = BLOCK_SIZE;
      for(int i = 0; i < block->getIndirectionDataMapSize(); ++i)
@@ -936,9 +933,46 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
          limitOffset = offset;
      }
      
+     std::vector<uint16_t> indirectionNumList;
+     for(uint16_t offset : offsetList)
+     {
+         uint16_t indirectionNum = block->getIndNumByOffset(offset);
+        indirectionNumList.push_back(indirectionNum);
+     }
+     
+     // indirectionNumber List를 이용해서 블락에 넣어진 순으로 데이터를 리스트로 가져 온다.
+     std::vector<Data*> dataList;
+     for(uint16_t indNum : indirectionNumList)
+     {
+          Data* data = block->getData(indNum);
+          dataList.push_back(data);
+     }
+     
+     // 새로 arrangement할 오프셋을 List에 저장 한다.
+     offsetList.clear();
+     int newOffset = BLOCK_SIZE;
+     for(Data* data : dataList)
+     {
+         newOffset -= data->getDataSize();
+         offsetList.push_back(newOffset);
+     }
+     
+     // 블럭을 초기화 시킨다.
+     uint64_t chainingBlockAdr = block->getChaingAddress();
+     block->init();
+     
+     // 블럭 세팅한다.
+     block->setChainingAddress(chainingBlockAdr);
      
      
-     
+     for(int i=0; i < dataList.size(); ++i)
+     {
+         uint64_t indNum = indirectionNumList[i];
+         uint64_t offset = offsetList[i];
+         Data* data = dataList[i];
+         
+         block->insertData(indNum, offset, data);
+     }
      return true;
  }
  

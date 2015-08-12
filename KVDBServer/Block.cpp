@@ -102,10 +102,8 @@ Data* Block::getData(uint16_t idx)
 Data* Block::getData(std::string dataKey)
 {
     for(auto iter = indirectionDataMap.begin(); iter != indirectionDataMap.end(); ++iter )
-    {
         if(dataKey.compare(iter->second->data->getKey()) ==0)
             return iter->second->data;
-    }
     
     return NULL;
 }
@@ -124,10 +122,8 @@ uint16_t Block::getNewOffset(uint16_t dataSize)
     uint16_t minimumOffset = BLOCK_SIZE;
     
     for(auto iter = indirectionDataMap.begin(); iter != indirectionDataMap.end(); ++iter )
-    {
         if(iter->second->offset < minimumOffset)
             minimumOffset = iter->second->offset;
-    }
     
     uint16_t newOffset = minimumOffset - dataSize;
     
@@ -138,7 +134,7 @@ uint16_t Block::getNewOffset(uint16_t dataSize)
 
 uint16_t Block::getLargestOffset(uint16_t limitValue)
 {
-    int maximum =0;
+    uint16_t maximum =0;
     for(auto iter = indirectionDataMap.begin(); iter != indirectionDataMap.end(); ++iter )
     {
         uint16_t curOffset = iter->second->offset;
@@ -160,6 +156,17 @@ uint16_t Block::getNewIndirectionNumber()
     }
     
     return i;
+}
+
+uint16_t Block::getIndNumByOffset(uint16_t offset)
+{
+    for(auto iter = indirectionDataMap.begin(); iter != indirectionDataMap.end(); ++iter)
+    {
+        if(iter->second->offset == offset)
+            return iter->first;
+    }
+    
+    return 0;
 }
 
 
