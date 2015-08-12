@@ -169,6 +169,18 @@ uint16_t Block::getIndNumByOffset(uint16_t offset)
     return 0;
 }
 
+uint16_t Block::getIndNumByKey(std::string componentKey)
+{
+    for(auto iter = indirectionDataMap.begin(); iter != indirectionDataMap.end(); ++iter)
+    {
+        std::string key = iter->second->data->getKey();
+        if(key.compare(componentKey) == 0)
+            return iter->first;
+    }
+    
+    return 0;
+}
+
 
 
 

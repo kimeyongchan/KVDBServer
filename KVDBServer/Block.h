@@ -148,6 +148,7 @@ public:
     }
     
     uint16_t getIndNumByOffset(uint16_t offset);
+    uint16_t getIndNumByKey(std::string componentKey);
     
     
     const std::map<uint16_t, IndirectionData*>* getIndirectionDataMap() const
