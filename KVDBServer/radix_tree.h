@@ -56,7 +56,7 @@ class RadixTree
 {
 private:
     Node* headeNnode;
-    int dataSize;
+    uint32_t dataSize;
     
 private:
     int bits(uint32_t hash, int st);
@@ -100,6 +100,10 @@ public:
     bool insertData(string key, uint64_t ba);
     void deleteData(string key);
     NamedData* findData(string key);
+    uint32_t getSize() const
+    {
+        return this->dataSize;
+    }
 };
 
 #endif /* defined(__radixTreeCache__radix_tree__) */
