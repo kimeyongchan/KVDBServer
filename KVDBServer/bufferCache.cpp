@@ -2,6 +2,7 @@
 
 #define MAXSIZE 10000
 
+
 using namespace std;
 
 Block* BufferCache::findBlock(uint64_t ba)
@@ -59,7 +60,7 @@ uint64_t BufferCache::newBlock()
 	{
 		if (this->dbt.usingDescriptor[i].blkUsing == 0)
 		{
-			return i*BLOCKSIZE;
+			return i*BLOCK_SIZE;
 		}
 	}
 

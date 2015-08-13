@@ -1,9 +1,9 @@
 #include<map>
 #include<list>
 
-#include"Block.h"
-#include"SuperBlock.h"
-
+#include "Block.h"
+#include "SuperBlock.h"
+#include "Defines.h"
 using namespace std;
 
 #define BLOCKCOUNT 10000
@@ -19,11 +19,15 @@ private:
 		struct stFlag usingDescriptor[BLOCKCOUNT];
 	}dbt;
 
-	void setBlkDescriptor(int idx);
 public:
 	BufferCache(map<uint64_t, Block*> temp)
 	{
 	}
+    
+    BufferCache(SuperBlock* spBlock)
+    {
+        
+    }
 	
 	Block* findBlock(uint64_t ba);
 	bool insertBlock2Cache(uint64_t ba, Block* blk); // false: fail because of size -> require to delete.
