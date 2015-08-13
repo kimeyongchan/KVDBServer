@@ -45,11 +45,7 @@ private:
 public:
     Block()
     {
-        indirectionCnt = 0;
-        freeSpace = BLOCK_FIRST_FREE_SPACE;
-        chainingAddress = NULL;
-        indirectionDataMap.clear();
-        isDirty = true;
+        init();
     }
     
     ~Block();
@@ -142,7 +138,18 @@ public:
         return indirectionDataMap.size();
     }
     
+    void init()
+    {
+        chainingAddress = NULL;
+        indirectionCnt = 0;
+        freeSpace = BLOCK_FIRST_FREE_SPACE;
+        indirectionDataMap.clear();
+        isDirty = true;
+    }
     
+    uint16_t getIndNumByOffset(uint16_t offset);
+    uint16_t getIndNumByKey(std::string componentKey);
+    void getLargestDatasDistanceSize(uint16_t& largestDatasDistance, uint16_t& newOffset);
     
     
     const std::map<uint16_t, IndirectionData*>* getIndirectionDataMap() const
