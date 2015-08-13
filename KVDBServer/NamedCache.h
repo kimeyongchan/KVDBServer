@@ -13,12 +13,38 @@
 #include "SuperBlock.h"
 #include "lruQueue.h"
 
+#define MAX 1000
 using namespace std;
 
-struct NameQueData
+class NameQueData
 {
+private:
     uint32_t hitCount;
     string key;
+public:
+    NameQueData(string key)
+    {
+        hitCount = 1;
+        this->key = key;
+    }
+    
+    NameQueData(string key, uint32_t hitCount)
+    {
+        this->hitCount = hitCount;
+        this->key = key;
+    }
+    void inc()
+    {
+        hitCount++;
+    }
+    string getKey() const
+    {
+        return this->key;
+    }
+    uint32_t getHitCount()
+    {
+        return hitCount;
+    }
 };
 
 class NamedCache
@@ -26,15 +52,13 @@ class NamedCache
 private:
     
     NamedData* root;
-   // RadixTree* fRdTree;  //root block contents input
-    LruQueue<NameQueData> namedQue;
+    list<NameQueData*> namedQue;
     
 public:
 	NamedCache(const SuperBlock* spBlock)
 	{
-		//allocate radix tree.
-        //fRdTree = new RadixTree;
-	}
+       // this->root = new NameData("/",spBlock->getRootAddress());
+    }
 
 	void insert(NamedData* parent, NamedData* child);
     NamedData* findComponent(string component, NamedData* parent);
