@@ -26,11 +26,23 @@ DiskManager::~DiskManager()
 }
 
 
-bool DiskManager::initialize(const char* fileName, uint16_t blockSize, uint64_t diskSize) //if not exist disk
+bool DiskManager::initialize(const char* fileName, uint16_t blockSize, uint64_t diskSize, SuperBlock* superBlock) //if not exist disk
 {
-    if ((fd = open(fileName, O_RDWR | O_SYNC)) < 0) // if not exist disk
+    char filePath[1000] = {0, };
+    memcpy(filePath, __FILE__, strlen(__FILE__));
+    for(int i = (int)strlen(filePath); i > 0; i--)
     {
-        if(createDisk(fileName, blockSize, diskSize) == false)
+        if(filePath[i] == '/')
+        {
+            memcpy(filePath + i + 1, fileName, strlen(fileName));
+            filePath[i+1+strlen(fileName)] = '\0';
+            break;
+        }
+    }
+    
+    if ((fd = open(filePath, O_RDWR | O_SYNC)) < 0) // if not exist disk
+    {
+        if(createDisk(filePath, blockSize, diskSize) == false)
         {
             ErrorLog("create Disk fail");
             return false;
@@ -38,8 +50,6 @@ bool DiskManager::initialize(const char* fileName, uint16_t blockSize, uint64_t 
     }
     
     lseek(fd, 0, SEEK_SET);
-    
-    superBlock = new SuperBlock();
     
     /////////////////////////// set block size
     
@@ -101,6 +111,20 @@ bool DiskManager::initialize(const char* fileName, uint16_t blockSize, uint64_t 
     }
     
     superBlock->setRootBlockAddress(rootBlockAddress);
+    
+    
+    ////////////////////////// set root
+    
+    Block* rootBlock = new Block();
+    
+    if(readBlock(rootBlockAddress, rootBlock) == false)
+    {
+        ErrorLog("root block read error");
+        return false;
+    }
+    
+    superBlock->setRootBlock(rootBlock);
+
     
 
     return true;
@@ -337,6 +361,8 @@ bool DiskManager::readBlock(uint64_t blockAddress, Block *block)
                 ErrorLog("insertData error");
                 return false;
             }
+            
+            countDiskInd++;
         }
     }
     

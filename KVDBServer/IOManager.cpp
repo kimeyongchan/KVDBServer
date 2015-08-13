@@ -249,16 +249,15 @@ bool IOManager::parsingQuery(const char* query, int queryLen, RequestInfo** pri)
 
 int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
 {
-    
-    DebugLog("INSERT - key : %s, value : %s ", reqInfo->key.c_str(), reqInfo->value.c_str());
-  
+   /*
+    // ======================================================= 우리가 한번쯤 짚고 가야할 점 ㅋ==================================================
      // 예상 데이터    Key :  a/b   Value: hello 내지는 그냥  h
      // 디스크에 실제로 써보는거 테스코드
      componentList.clear();
      componentList = split(reqInfo->key, '/');
      
      // 루트블럭 가져오기
-     SuperBlock* superBlock = KVDBServer::getInstance()->diskManager->superBlock;
+     SuperBlock* superBlock = KVDBServer::getInstance()->superBlock;
      uint64_t rootBlockAdr = superBlock->getRootBlockAddress();
      Block* rootBlock = new Block();
      
@@ -267,7 +266,7 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
      data->setFormatType(FLAG_DIRECTORY_DATA);
      data->setKey(componentList[0]);
      
-     uint64_t aBlockAdr = rootBlockAdr + BLOCK_SIZE;
+     uint64_t aBlockAdr = rootBlockAdr + 8192;//BLOCK_SIZE;
      Block* aBlock = new Block();
      uint64_t aBlockFirstIndBlockAdr = aBlock->getFirstIndirectionBlockAdr(aBlockAdr);
      
@@ -295,16 +294,18 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
      // 더티된 블럭들 써준다.
      KVDBServer::getInstance()->diskManager->writeBlock(rootBlockAdr, rootBlock);
      KVDBServer::getInstance()->diskManager->writeBlock(aBlockAdr, aBlock);
-     
-     delete data;
+    
+  
      delete aBlock;
-     delete keyValData;
      delete rootBlock;
      
-     
+     DebugLog("INSERT - key : %s, value : %s ", reqInfo->key.c_str(), reqInfo->value.c_str());
     
+    // ======================================================= 테스트 코드 ==================================================
+    */
      
  /*
+     DebugLog("INSERT - key : %s, value : %s ", reqInfo->key.c_str(), reqInfo->value.c_str());
 
      componentList.clear();
      namedCacheDataList.clear();                         // 네임드캐시
@@ -718,14 +719,15 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
  {
      
  //    DebugLog("FIND - key : %s", reqInfo->key.c_str());
-     
-     
+  
+   /*
+    // ======================================================= 테스트 코드 ==================================================
      // 테스트 가져오기 코드   Key : a/b
      componentList.clear();
      componentList = split(reqInfo->key, '/');
      
      // 루트블럭 가져오기
-     SuperBlock* superBlock = KVDBServer::getInstance()->diskManager->superBlock;
+     SuperBlock* superBlock = KVDBServer::getInstance()->superBlock;
      Block* rootBlock = new Block();
      KVDBServer::getInstance()->diskManager->readBlock(superBlock->getRootBlockAddress(), rootBlock);
      
@@ -745,12 +747,15 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
      KeyValueData* keyvalData = (KeyValueData*)findData;
      
      
-     delete aBlock;
-     delete rootBlock;
+   
      
      DebugLog("FIND - key : %s, value : %s ", keyvalData->getKey().c_str(), keyvalData->getValue().c_str());
      
-    
+     delete aBlock;
+     delete rootBlock;
+     // ======================================================= 테스트 코드 ==================================================
+     
+    */
      
  /*
      componentList.clear();
@@ -899,7 +904,7 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
  uint64_t IOManager::ibaToBa(uint64_t iba)
  {
      //uint64_t rootBlockAddress= KVDBServer::getInstance()->cacheMgr->getSuperBlock()->getRootBlockAddress();
-     uint64_t rootBlockAddress = KVDBServer::getInstance()->diskManager->superBlock->getRootBlockAddress();
+     uint64_t rootBlockAddress = KVDBServer::getInstance()->superBlock->getRootBlockAddress();
      
      uint64_t distance = (iba - rootBlockAddress) % BLOCK_SIZE;
      uint64_t blockAddress = iba - distance;
@@ -917,68 +922,166 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
  
  bool IOManager::compaction(Block* block)
  {
+     // 블락 인다이렉션 돌면서 가장 큰 오프셋 순으로 인다이렉션 넘버를 데이터를 반환한다.
+     std::vector<uint16_t> offsetList;
+     
+     int limitOffset = BLOCK_SIZE;
+     for(int i = 0; i < block->getIndirectionDataMapSize(); ++i)
+     {
+         uint16_t offset = block->getLargestOffset(limitOffset);
+         offsetList.push_back(offset);
+         limitOffset = offset;
+     }
+     
+     std::vector<uint16_t> indirectionNumList;
+     for(uint16_t offset : offsetList)
+     {
+         uint16_t indirectionNum = block->getIndNumByOffset(offset);
+        indirectionNumList.push_back(indirectionNum);
+     }
+     
+     // indirectionNumber List를 이용해서 블락에 넣어진 순으로 데이터를 리스트로 가져 온다.
+     std::vector<Data*> dataList;
+     for(uint16_t indNum : indirectionNumList)
+     {
+          Data* data = block->getData(indNum);
+          dataList.push_back(data);
+     }
+     
+     // 새로 arrangement할 오프셋을 List에 저장 한다.
+     offsetList.clear();
+     int newOffset = BLOCK_SIZE;
+     for(Data* data : dataList)
+     {
+         newOffset -= data->getDataSize();
+         offsetList.push_back(newOffset);
+     }
+     
+     // 블럭을 초기화 시킨다.
+     uint64_t chainingBlockAdr = block->getChaingAddress();
+     block->init();
+     
+     // 블럭 세팅한다.
+     block->setChainingAddress(chainingBlockAdr);
+     
+     
+     for(int i=0; i < dataList.size(); ++i)
+     {
+         uint64_t indNum = indirectionNumList[i];
+         uint64_t offset = offsetList[i];
+         Data* data = dataList[i];
+         
+         block->insertData(indNum, offset, data);
+     }
      return true;
  }
  
 /*
  IoMgrReturnValue IOManager::checkBufferCacheAndDisk(uint64_t indirectionBa, int curIdx, int lastIdx)
  {
-    uint64_t blockAddress    = ibaToBa(indirectionBa);
+     uint64_t blockAddress    = ibaToBa(indirectionBa);
      uint16_t indirectionIdx  = ibaToOffsetIdx(indirectionBa, blockAddress);
      
-     Block*  block = bufferCache->findBlock(blockAddress);
+     Block*  block = NULL;
+     std::vector<Block*> diskReadBlockList;
      
-     if(block == NULL)
+     while(true)
      {
-         block = new Block();
-         insertBufferCacheDataMap.insert(std::pair<uint64_t, Block*>(blockAddress, block));
+         block = bufferCache->findBlock(blockAddress);
          
-         if(false == KVDBServer::getInstance()->m_diskManager->readBlock(blockAddress, diskReadBlock))
+         if(block == NULL)
          {
-             delete block;
-             InsertReturnValue returnVal(NULL, curIdx, -1);
-             return returnVal; // 블럭이 없다.
-         }
-     }
-     
-     //Data* data = block->getData(indirectionIdx);
-     Data* data = block->getData(componentList[curIdx]);
-     if(curIdx < lastIdx)  // 중간 데이터 일때
-     {
-         if(data == NULL)
-         {
-             IoMgrReturnValue returnVal(NULL, curIdx, -2);
-             return returnVal;
-         }
-         else
-         {
-             DirectoryData* dirData = (DirectoryData*)data;
+             block = new Block();
+             diskReadBlockList.push_back(block);
              
-             NamedCacheData namedCacheData(curIdx, indirectionBa);
-             namedCacheDataList.push_back(namedCacheData);
+             if(false == KVDBServer::getInstance()->m_diskManager->readBlock(blockAddress, block))
+             {
+                 for(Block* diskReadBlock : diskReadBlockList)
+                     if(diskReadBlock != NULL)
+                         delete diskReadBlock;
+                 
+                 IoMgrReturnValue returnVal(NULL, curIdx, -1);
+                 return returnVal; // 블럭이 없다.
+             }
              
-             return checkBufferCacheAndDisk(dirData->getIndBlockAddress(), curIdx +1, lastIdx);
+             insertBufferCacheDataMap.insert(std::pair<uint64_t, Block*>(blockAddress, block));
+             
          }
          
-     }else // 마지막 데이터 일때
-     {
-         if(data == NULL)
+         Data* data = block->getData(componentList[curIdx]);
+         
+         if(curIdx < lastIdx)  // 중간 데이터 일때
          {
-             IoMgrReturnValue returnVal(block, curIdx, 0);  // insert 해도 된다.
-             return returnVal;
-         }
-         else
+             if(data == NULL)
+             {
+                 if(block->getChaingAddress() > 0)  // 블럭체이닝 있을때
+                 {
+                     blockAddress = block->getChaingAddress();
+                     continue;
+                 }
+                 else   //  중간 데이터인데 현재 블럭에 데이터 없고 체이닝된 블럭도 없을 때
+                 {
+                     
+                     for(Block* diskReadBlock : diskReadBlockList)
+                         if(diskReadBlock != NULL)
+                             delete diskReadBlock;
+                     
+                     IoMgrReturnValue returnVal(NULL, curIdx, -2);
+                     return returnVal;
+                 }
+                 
+             }else // 중간데이터 인데 값 있을때
+             {
+                 DirectoryData* dirData = (DirectoryData*)data;
+                 
+                 uint16_t indNum = block->getIndNumByKey(componentList[curIdx]);
+                 uint64_t indBlockAdr = block->getIndirectionBlockAdr(blockAddress, indNum);
+                 NamedCacheData namedCacheData(curIdx, indirectionBa);
+                 namedCacheDataList.push_back(namedCacheData);
+                 
+                 return checkBufferCacheAndDisk(dirData->getIndBlockAddress(), curIdx +1, lastIdx);    // dangerous Stack OverFlow.....
+             }
+             
+         }else // 마지막 데이터 일때
          {
-             IoMgrReturnValue returnVal(NULL, curIdx, -3);  // 값이 이미 있음
-             return returnVal;
+             if(data == NULL)
+             {
+                 if(block->getChaingAddress() > 0)  // 블럭체이닝 있을때
+                 {
+                     blockAddress    = block->getChaingAddress();
+                     continue;
+                 }
+                 else   // 마지막 데이터인데 현재 블럭에 데이터 없고 체이닝된 블럭도 없을 때
+                 {
+                     IoMgrReturnValue returnVal(block, curIdx, 0);
+                     return returnVal;
+                 }
+             }
+             else
+             {
+                 for(Block* diskReadBlock : diskReadBlockList)
+                     if(diskReadBlock != NULL)
+                         delete diskReadBlock;
+                 
+                 IoMgrReturnValue returnVal(NULL, curIdx, -3);  // 값이 이미 있음
+                 return returnVal;
+             }
          }
-     }
-    
+         
+     }// while 문 end
      
-     IoMgrReturnValue returnVal(NULL, 0, 0);  // 값이 이미 있음
-     return returnVal;
  }
 
+
 */
+
+
+
+
+
+
+
+
+
 
 

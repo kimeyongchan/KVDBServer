@@ -21,7 +21,23 @@
 
 #define BUF_LEN 1023
 
+enum DATA_TYPE
+{
+    DATA_TYPE_PING_NOTIFY = 0,
+    DATA_TYPE_PING_OK,
+    DATA_TYPE_REQ,
+};
+
+typedef int8_t dataType_t;
 typedef uint64_t dataSize_t;
+
+#pragma pack(push, 1)
+struct DataHeader
+{
+    dataType_t dataType;
+    dataSize_t dataSize;
+};
+#pragma pack(pop)
 
 struct KVDB
 {
@@ -64,10 +80,13 @@ void KVDB_close(KVDB* conn)
 
 void KVDB_sendQuery(KVDB* conn, const char* query, dataSize_t queryLen)
 {
-    char wQuery[queryLen + sizeof(dataSize_t)];
-    memcpy(wQuery, &queryLen, sizeof(dataSize_t));
-    memcpy(wQuery + sizeof(dataSize_t), query, queryLen);
-    send(conn->s, wQuery, queryLen + sizeof(dataSize_t), NULL);
+    DataHeader dataHeader;
+    dataHeader.dataType = DATA_TYPE_REQ;
+    dataHeader.dataSize = queryLen;
+    char wQuery[queryLen + sizeof(dataHeader)];
+    memcpy(wQuery, &dataHeader, sizeof(dataHeader));
+    memcpy(wQuery + sizeof(dataHeader), query, queryLen);
+    send(conn->s, wQuery, sizeof(dataHeader) + queryLen, NULL);
 }
 
 

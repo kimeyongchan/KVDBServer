@@ -4,12 +4,12 @@
 #include <stddef.h>
 
 class Network;
-class WorkerThread;
 class XmlData;
 class DiskManager;
 class Log;
 class LogBuffer;
 class LogFile;
+class SuperBlock;
 
 class KVDBServer
 {
@@ -35,6 +35,7 @@ public:
     DiskManager* diskManager;
     LogBuffer* logBuffer;
     LogFile* logFile;
+    SuperBlock* superBlock;
 };
 
 #endif //__K_V_D_B_SERVER_H__
