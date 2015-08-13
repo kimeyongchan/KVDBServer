@@ -17,21 +17,22 @@
 #include "KeyValueData.h"
 #include "KeyValueChainingData.h"
 
+#define MAXNUMDATA 1000
 using namespace std;
 
-class NameQueData
+class NamedQueData
 {
 private:
     uint32_t childCount;
     string key;
 public:
-    NameQueData(string key)
+    NamedQueData(string key)
     {
         childCount = 0;
         this->key = key;
     }
     
-    NameQueData(string key, uint32_t count)
+    NamedQueData(string key, uint32_t count)
     {
         this->childCount = count;
         this->key = key;
@@ -55,7 +56,7 @@ class NamedCache
 private:
     
     NamedData* root;
-    list<NameQueData*> namedQue;
+    list<NamedQueData*> namedQue;
     
 public:
 	NamedCache(SuperBlock* spBlock)
@@ -66,6 +67,7 @@ public:
         
         for(auto it = dataMap->begin(); it != dataMap->end(); ++it)
         {
+            /*   make cache data in root block.  */
             Data* d = it->second->data;
             switch(d->getFormatType())
             {
@@ -73,27 +75,30 @@ public:
                 {   uint64_t ba = ((DirectoryData*)d)->getIndBlockAddress();
                     string key = ((DirectoryData*)d)->getKey();
                     ((RadixTree*)this->root->getRadixTree())->insertData(key, ba);
+                    this->namedQue.push_back(new NamedQueData(key));
                     break;
                 }
                 case FLAG_KEY_VALUE_DATA:
                 {
                     uint64_t ba = this->root->getBlockAddress();
-                    string key = this->root->getKey();
+                    string key = ((KeyValueData*)d)->getKey();
                     ((RadixTree*)this->root->getRadixTree())->insertData(key, ba);
+                    this->namedQue.push_back(new NamedQueData(key));
                     break;
                 }
                 case FLAG_KEY_VALUE_CHAINING_DATA:
                 {
-                    
+                    uint64_t ba = ((KeyValueChainingData*)d)->getIndBlockAddress();
+                    string key = ((KeyValueChainingData*)d)->getKey();
+                    ((RadixTree*)this->root->getRadixTree())->insertData(key, ba);
+                    this->namedQue.push_back(new NamedQueData(key));
                     break;
                 }
             }
-            
-            
         }
         
     }
-
+    
 	void insert(NamedData* parent, NamedData* child);
     NamedData* findComponent(string component, NamedData* parent);
 	void deleteData(string component, NamedData* parent);

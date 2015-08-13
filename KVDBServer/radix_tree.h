@@ -31,7 +31,7 @@ class NamedData
 private:
     string key;
     uint64_t ba;
-    void* tree;
+    void* tree;  // for radix tree.
 public:
     NamedData(string key, uint64_t ba)
     {

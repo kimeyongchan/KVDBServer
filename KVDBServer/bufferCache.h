@@ -22,7 +22,7 @@ public:
 	Block* findBlock(uint64_t ba);
 	bool insertBlock2Cache(uint64_t ba, Block* blk); // false: fail because of size -> require to delete.
 	uint64_t newBlock();
-	int getBlkDescriptor(int idx);
+	
 	bool getDeleteBlock(uint64_t& rtba, Block& rtblk);
 	void deleteDirty(uint64_t ba);
     
