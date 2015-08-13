@@ -89,6 +89,8 @@ private:
     std::vector<std::string>    componentList;
     std::vector<NamedCacheData> namedCacheDataList;
     std::map<uint64_t, Block*>  insertBufferCacheDataMap; //<블럭주소, 블럭>
+    std::vector<uint64_t>       lastBlockChainingAdrList;
+    
     
     std::vector<std::string> split(const std::string &s, char delim);
     
