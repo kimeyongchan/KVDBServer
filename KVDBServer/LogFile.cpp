@@ -23,13 +23,18 @@ bool LogFile::initialize(const char* fileName)
 {
     char filePath[1000] = {0, };
     memcpy(filePath, __FILE__, strlen(__FILE__));
+    int slushCount = 0;
     for(int i = (int)strlen(filePath); i > 0; i--)
     {
         if(filePath[i] == '/')
         {
-            memcpy(filePath + i + 1, fileName, strlen(fileName));
-            filePath[i+1+strlen(fileName)] = '\0';
-            break;
+            slushCount++;
+            if(slushCount == 2)
+            {
+                memcpy(filePath + i + 1, fileName, strlen(fileName));
+                filePath[i+1+strlen(fileName)] = '\0';
+                break;
+            }
         }
     }
         
@@ -41,8 +46,20 @@ bool LogFile::initialize(const char* fileName)
             return false;
         }
     }
+    else
+    {
+        lseek(fd, 0, SEEK_SET);
+        
+        if(read(fd, &cln, sizeof(cln)) < 0)
+        {
+            ErrorLog("read block error");
+            return false;
+        }
+        
+        logFileSize = sizeof(cln);
+    }
     
-    logFileSize = lseek(fd, 0, SEEK_END);
+    
     
     return true;
 }
@@ -62,12 +79,24 @@ bool LogFile::createDisk(const char* fileName)
         return false;
     }
     
+    lseek(fd, 0, SEEK_SET);
+    
+    cln = 0;
+    
+    if(write(fd, &cln, sizeof(cln)) < 0)
+    {
+        ErrorLog("write block error");
+        return false;
+    }
+    
+    logFileSize = sizeof(cln);
+    
     return true;
 }
 
 bool LogFile::writeLogFile(int logSize, const char* logArray)
 {
-    lseek(fd, 0, SEEK_END);
+    lseek(fd, logFileSize, SEEK_SET);
     
     if(write(fd, logArray, logSize) < 0)
     {
@@ -75,33 +104,40 @@ bool LogFile::writeLogFile(int logSize, const char* logArray)
         return false;
     }
     
-    return true;
-}
-
-int LogFile::readLogFile(char** logArray) const
-{
-    int logFileSize = (int)lseek(fd, 0, SEEK_END);
+    logFileSize += logSize;
+    
+    cln++;
     
     lseek(fd, 0, SEEK_SET);
     
-    if(read(fd, *logArray, logFileSize) < 0)
+    if(write(fd, &cln, sizeof(cln)) < 0)
+    {
+        ErrorLog("write cln error");
+        return false;
+    }
+
+    return true;
+}
+
+long LogFile::recoveryLogFile(int diskCln, char** logArray)
+{
+    lseek(fd, sizeof(cln), SEEK_SET);
+    
+    if(read(fd, *logArray, logFileSize - sizeof(cln)) < 0)
     {
         ErrorLog("read block error");
         return -1;
     }
-    return logFileSize;
+    
+    long sendLogFileSize = logFileSize - sizeof(cln);
+    
+    logFileSize = sizeof(cln);
+    
+    return sendLogFileSize;
 }
 
 void LogFile::clear()
 {
-    if(ftruncate(fd, 0) < 0)
-    {
-        ErrorLog("ftruncate error");
-    }
-    
-    if(ftruncate(fd, MAX_LOG_FILE_SIZE) < 0)
-    {
-        ErrorLog("ftruncate error");
-    }
+    logFileSize = sizeof(cln);
 }
 

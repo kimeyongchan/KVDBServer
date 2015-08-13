@@ -28,26 +28,51 @@ LogBuffer::~LogBuffer()
     free(logBuffer);
 }
 
-bool LogBuffer::initialize()
+bool LogBuffer::initialize(int _cln)
 {
     if(logBuffer == NULL)
         logBuffer = (char*)malloc(sizeof(char) * MAX_LOG_BUFFER_SIZE);
     
     logLen = 0;
     currentLogBufferSeek = logBuffer;
+    cln = _cln;
     return true;
 }
 
-int LogBuffer::readLogBuffer(const char** pLogBuffer) const
+int LogBuffer::commitLogBuffer(char** pLogBuffer)
 {
-    *pLogBuffer = logBuffer;
-    return logLen;
+    if(logLen == 0)
+    {
+        return 0;
+    }
+    
+    uint32_t commit = 0;
+    memcpy(currentLogBufferSeek, &commit, sizeof(commit));
+    currentLogBufferSeek += sizeof(commit);
+    
+    logLen += sizeof(commit);
+    
+    int sendLogLen = logLen;
+    
+    *pLogBuffer = (char*)malloc(logLen);
+    memcpy(*pLogBuffer, logBuffer, logLen);
+    
+    logLen = 0;
+    currentLogBufferSeek = logBuffer;
+    cln++;
+    
+    return sendLogLen;
 }
 
 bool LogBuffer::saveLog(bool isAllocateBlock, bool isInsert, int64_t indBlockAddress, uint16_t offset, const Data* data)
 {
     
     char* tempSeek = currentLogBufferSeek;
+    
+    memcpy(currentLogBufferSeek, &cln, sizeof(cln));
+    currentLogBufferSeek += sizeof(cln);
+    
+    
     ////////////////////////flag set
     
     char flag;
@@ -148,9 +173,10 @@ bool LogBuffer::saveLog(bool isAllocateBlock, bool isInsert, int64_t indBlockAdd
     
     return true;
 }
-
+/*
 void LogBuffer::clear()
 {
     logLen = 0;
     currentLogBufferSeek = logBuffer;
-}
+    cln++;
+}*/

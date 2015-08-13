@@ -55,20 +55,22 @@ bool KVDBServer::Initialize(int workerThreadCount)
     }
     
     network = new Network();
-    if (network->Initialize(networkInfoList, networkInfoCount, workerThreadCount, workerThreadArray) == false)
+    if (network->Initialize(networkInfoList, networkInfoCount, workerThreadCount, workerThreadArray, 1000, 3) == false)
     {
         ErrorLog("Network error");
         return false;
     }
     
-    logBuffer = new LogBuffer();
-    if (logBuffer->initialize() == false)
+    logFile = new LogFile();
+    if (logFile->initialize(KVDB_LOG_NAME) == false)
     {
         return false;
     }
+
     
-    logFile = new LogFile();
-    if (logFile->initialize(KVDB_LOG_NAME) == false)
+    
+    logBuffer = new LogBuffer();
+    if (logBuffer->initialize(logFile->getCln() + 1) == false)
     {
         return false;
     }
@@ -81,7 +83,23 @@ bool KVDBServer::Initialize(int workerThreadCount)
         ErrorLog("diskManager error");
         return false;
     }
+    
+    // cache에 슈퍼블럭 주기
 
+    if(superBlock->getCln() < logFile->getCln()) // recovery
+    {
+//        logFile->getLogInfoByCln(superBlock->getCln());
+    }
+    else if( superBlock->getCln() == logFile->getCln()) // not recovery
+    {
+        
+    }
+    else //error
+    {
+        ErrorLog("disk cln - %d, logfile cln - %d", superBlock->getCln(), logFile->getCln());
+    }
+    
+    
 	return true;
 }
 

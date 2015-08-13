@@ -18,6 +18,7 @@ public:
     int64_t requestNewBlock();
     bool writeBlock(uint64_t blockAddress, const Block* block);
     bool readBlock(uint64_t blockAddress, Block* block);
+    bool recovery(int logFileCln, int diskCln, const char* log, int logSize);
     
 private:
     bool createDisk(const char* fileName, uint16_t blockSize, uint64_t diskSize);

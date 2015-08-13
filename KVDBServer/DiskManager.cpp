@@ -30,13 +30,18 @@ bool DiskManager::initialize(const char* fileName, uint16_t blockSize, uint64_t 
 {
     char filePath[1000] = {0, };
     memcpy(filePath, __FILE__, strlen(__FILE__));
+    int slushCount = 0;
     for(int i = (int)strlen(filePath); i > 0; i--)
     {
         if(filePath[i] == '/')
         {
-            memcpy(filePath + i + 1, fileName, strlen(fileName));
-            filePath[i+1+strlen(fileName)] = '\0';
-            break;
+            slushCount++;
+            if(slushCount == 2)
+            {
+                memcpy(filePath + i + 1, fileName, strlen(fileName));
+                filePath[i+1+strlen(fileName)] = '\0';
+                break;
+            }
         }
     }
     
@@ -51,7 +56,7 @@ bool DiskManager::initialize(const char* fileName, uint16_t blockSize, uint64_t 
     
     lseek(fd, 0, SEEK_SET);
     
-    /////////////////////////// set block size
+    /////////////////////////// get block size
     
     uint16_t diskBlockSize;
     
@@ -72,7 +77,7 @@ bool DiskManager::initialize(const char* fileName, uint16_t blockSize, uint64_t 
     
     
     
-    /////////////////////////// set block count
+    /////////////////////////// get block count
     
     uint64_t blockCount;
     
@@ -84,6 +89,19 @@ bool DiskManager::initialize(const char* fileName, uint16_t blockSize, uint64_t 
     
     superBlock->setBlockCount(blockCount);
     
+    
+    /////////////////////////// get cln
+    
+    
+    uint32_t cln;
+    
+    if(read(fd, &cln, sizeof(cln)) < 0)
+    {
+        ErrorLog("write error");
+        return false;
+    }
+    
+    superBlock->setCln(cln);
     
     
     /////////////////////////// bitArray memset 0
@@ -100,7 +118,7 @@ bool DiskManager::initialize(const char* fileName, uint16_t blockSize, uint64_t 
     
     
     
-    //////////////////////////// set root address
+    //////////////////////////// get root address
     
     int64_t rootBlockAddress;
 
@@ -113,7 +131,7 @@ bool DiskManager::initialize(const char* fileName, uint16_t blockSize, uint64_t 
     superBlock->setRootBlockAddress(rootBlockAddress);
     
     
-    ////////////////////////// set root
+    ////////////////////////// get root
     
     Block* rootBlock = new Block();
     
@@ -164,7 +182,17 @@ bool DiskManager::createDisk(const char* fileName, uint16_t blockSize, uint64_t 
         ErrorLog("write error");
         return false;
     }
-
+    
+    
+    /////////////////////////// set cln
+    
+    uint32_t cln = 0;
+    
+    if(write(fd, &cln, sizeof(cln)) < 0)
+    {
+        ErrorLog("write cln error");
+        return false;
+    }
     
     /////////////////////////// bitArray memset 0
     
@@ -492,3 +520,10 @@ bool DiskManager::readDisk(uint64_t address, void* buffer, int readSize)
     
     return true;
 }
+
+bool DiskManager::recovery(int logFileCln, int diskCln, const char* log, int logSize)
+{
+    
+    return true;
+}
+

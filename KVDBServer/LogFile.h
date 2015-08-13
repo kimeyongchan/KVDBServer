@@ -11,6 +11,8 @@
 
 #define MAX_LOG_FILE_SIZE   1024 * 1024 * 500
 
+#include <stdInt.h>
+
 class LogFile
 {
 public:
@@ -19,8 +21,11 @@ public:
     bool initialize(const char* fileName);
     
     bool writeLogFile(int logSize, const char* logArrary);
-    int readLogFile(char** logArray) const;
+    long recoveryLogFile(int diskCln, char** logArray);
     void clear();
+    
+    int getCln() { return cln; }
+//    long getLogInfoByCln(int _cln); //ToDo. make logInfo class
     
 private:
     bool createDisk(const char* fileName);
@@ -28,6 +33,7 @@ private:
 private:
     int fd;
     long logFileSize;
+    uint32_t cln;
 };
 
 #endif /* defined(__KVDBServer__LogFile__) */
