@@ -303,8 +303,8 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
     
     // ======================================================= 테스트 코드 ==================================================
     */
-     
- /*
+   /*
+ 
      DebugLog("INSERT - key : %s, value : %s ", reqInfo->key.c_str(), reqInfo->value.c_str());
 
      componentList.clear();
@@ -330,6 +330,7 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
          {
              parentNamedData = nd;  // 네임드 캐시에 넣을때 쓰일 변수
              returnVal = checkBufferCacheAndDisk(nd->getIdtAddr(), i-1, componentList.size()-1);
+             indirectionBlockAdr = namedCacheDataList.back().indirectionBlockAdr;
              
              if(returnVal.returnCode <0)
                  return returnVal.returnCode;
@@ -359,10 +360,7 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
      uint64_t blockAdr = ibaToBa(indirectionBlockAdr);
      std::string key = componentList[returnVal.componentIdx];
      
-     // 컴팩션
-     compaction(block);
-     
-     
+ 
      // 블럭의 프리스페이스와 실제 넣을 데이터 사이즈를 비교해봐야한다.
      // 실제 넣을 데이터 사이즈를 구한다.
      
@@ -379,7 +377,15 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
          data->setFormatType(FLAG_KEY_VALUE_DATA);
          data->setKey(key);
          data->setValue(reqInfo->value);
-         uint16_t newOffset = block->getNewOffset(data->getDataSize());
+         
+         uint16_t newOffset =0;
+         uint16_t largestDatasDistance =0;
+         block->getLargestDatasDistanceSize(largestDatasDistance, newOffset); // 들어갈수 있는 offset을 받아온다.
+         if( data->getDataSize() < largestDatasDistance)
+         {
+             compaction(block);
+             newOffset = block->getNewOffset(data->getDataSize());
+         }
          
          // 블럭에 데이터 넣기
          block->insertData(newIndirectionNumber, newOffset, data);
@@ -400,7 +406,6 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
          
          if(minimumBlockSize > block->getFreeSpace())
              return -4; // 최소 체이닝 할수 있는 데이터 크기조차 넣을 수 없다.
-         
          
          
          uint32_t remainValueSize = reqInfo->value.size();
@@ -488,7 +493,7 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
              diskBlockAdr = newChingingBlockAdr;
          }
          
-     }
+     }// while end
      
      // NamedCache , BufferCache에 넣기  더티 상태
      // 네임드 캐시에 넣기
@@ -1030,7 +1035,7 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
                      return returnVal;
                  }
                  
-             }else // 중간데이터 인데 값 있을때
+             }else // 중간데이터인데 값 있을때
              {
                  DirectoryData* dirData = (DirectoryData*)data;
                  
