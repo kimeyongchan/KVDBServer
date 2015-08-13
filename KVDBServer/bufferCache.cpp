@@ -1,8 +1,5 @@
 #include"bufferCache.h"
 
-#define MAXSIZE 10000
-
-
 using namespace std;
 
 Block* BufferCache::findBlock(uint64_t ba)
@@ -20,7 +17,7 @@ Block* BufferCache::findBlock(uint64_t ba)
 
 bool BufferCache::insertBlock2Cache(uint64_t ba, Block* blk)
 {
-	if (this->bc.size() < MAXSIZE)
+	if (this->bc.size() < this->spB->getBlockCount())
 	{
 	//	this->que.insertQueue(ba);
 		this->bc.insert(map<uint64_t, Block*>::value_type(ba, blk));
@@ -56,11 +53,12 @@ bool BufferCache::getDeleteBlock(uint64_t& rtba,Block& rtblk)  //arrange : ba, b
 
 uint64_t BufferCache::newBlock()
 {
-	for (int i = 0; i < BLOCKCOUNT; i++)
+    char* bitArr = this->spB->getUsingBlockBitArray();
+	for (int i = 0; i < this->spB->getBlockCount(); i++)
 	{
-		if (this->dbt.usingDescriptor[i].blkUsing == 0)
+		if (bitArr[i] == 0)
 		{
-			return i*BLOCK_SIZE;
+			return i*spB->getBlockSize();
 		}
 	}
 

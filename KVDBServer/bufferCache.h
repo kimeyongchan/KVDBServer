@@ -6,26 +6,16 @@
 #include "Defines.h"
 using namespace std;
 
-#define BLOCKCOUNT 10000
 class BufferCache
 {
 private:
 	map<uint64_t, Block*> bc;
     list<uint64_t> bufferQueue;
-
-	struct stFlag 	{ unsigned char blkUsing : 1; };
-	
-	struct DBT {
-		struct stFlag usingDescriptor[BLOCKCOUNT];
-	}dbt;
-
+    SuperBlock* spB;
 public:
-	BufferCache(map<uint64_t, Block*> temp)
-	{
-	}
-    
     BufferCache(SuperBlock* spBlock)
     {
+        this->spB = spBlock;
         
     }
 	
@@ -35,6 +25,9 @@ public:
 	int getBlkDescriptor(int idx);
 	bool getDeleteBlock(uint64_t& rtba, Block& rtblk);
 	void deleteDirty(uint64_t ba);
-	bool initFunction(const SuperBlock* spBlock);
-
+    
+    void initialize(SuperBlock* spBlock)
+    {
+        this->spB = spBlock;
+    }
 };

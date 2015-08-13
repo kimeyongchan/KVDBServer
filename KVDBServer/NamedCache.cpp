@@ -33,7 +33,7 @@ NamedData* NamedCache::findComponent(string component, NamedData* parent)
                 NameQueData* temp =  *it;
                 if(temp->getKey().compare(fd->getKey()) == 0)
                 {
-                    int hitCount = temp->getHitCount();
+                    int hitCount = temp->getChildCount();
                     hitCount++;
                     string key = temp->getKey();
                     this->namedQue.erase(it);
@@ -58,7 +58,7 @@ void NamedCache::deleteData(string component, NamedData* parent) //arrange
         NameQueData* temp =  *it;
         if(temp->getKey().compare(component) == 0)
         {
-            int hitCount = temp->getHitCount();
+            int hitCount = temp->getChildCount();
             hitCount++;
             string key = temp->getKey();
             this->namedQue.erase(it);

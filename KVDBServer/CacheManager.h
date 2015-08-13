@@ -18,10 +18,16 @@ class CacheMgr
 {
     
 private:
-    NamedCache nc;
-    SuperBlock sb;
-    BufferCache bc;
+    NamedCache* nc;
+    SuperBlock* sb;
+    BufferCache* bc;
 public:
     
+    void initialize(SuperBlock* spBlock)
+    {
+        nc = new NamedCache(spBlock);
+        bc = new BufferCache(spBlock);
+        
+    }
 };
 #endif /* defined(__radixTreeCache__CacheMgr__) */
