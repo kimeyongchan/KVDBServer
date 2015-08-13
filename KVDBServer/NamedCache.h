@@ -37,7 +37,7 @@ public:
         this->childCount = count;
         this->key = key;
     }
-    void inc()
+    void incChild()
     {
         childCount++;
     }
