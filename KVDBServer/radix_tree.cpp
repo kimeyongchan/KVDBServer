@@ -12,7 +12,6 @@
 
 int RadixTree::bits(uint32_t hash, int st)
 {
-    //cout << ((hash & (0x1 << st)) >> st);
     return (hash & (0x1 << st)) >> st;
 }
 
@@ -71,11 +70,6 @@ bool RadixTree::insertData(string key, uint64_t ba)
     }
     
     cout<<endl;
-    
-    /*
-       need to calculate memory size
-    */
-    
     
     /* allocate memory */
     Node* value = allocateEachNode(idx);

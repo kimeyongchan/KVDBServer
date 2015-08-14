@@ -31,13 +31,20 @@ class NamedData
 private:
     string key;
     uint64_t ba;
-    void* tree;
+    void* tree;  // for radix tree.
 public:
     NamedData(string key, uint64_t ba)
     {
         this->key = key;
         this->ba = ba;
         this->tree = NULL;
+    }
+    NamedData(string key, uint64_t ba, void* addr)
+    {
+        
+        this->key = key;
+        this->ba = ba;
+        this->tree = addr;
     }
     string getKey() {  return this->key; }
     uint64_t getBlockAddress() {  return this->ba; }
