@@ -14,6 +14,17 @@ IOManager::~IOManager()
 {
 }
 
+void enterConnect(const ConnectInfo* connectInfo)
+{
+    
+}
+
+
+void leaveConnect(const ConnectInfo* connectInfo)
+{
+    
+}
+
 
 void IOManager::receiveData(const ConnectInfo* connectInfo, const char* data, int dataSize)
 {    

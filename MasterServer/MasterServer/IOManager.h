@@ -11,6 +11,8 @@ public:
     ~IOManager();
 
     ////////////virtual method///////////////
+    void enterConnect(const ConnectInfo* connectInfo);
+    void leaveConnect(const ConnectInfo* connectInfo);
     void receiveData(const ConnectInfo* connectInfo, const char* data, int dataSize);
     
     

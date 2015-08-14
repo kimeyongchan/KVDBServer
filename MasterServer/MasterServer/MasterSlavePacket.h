@@ -9,5 +9,20 @@
 #ifndef MasterServer_MasterSlavePacket_h
 #define MasterServer_MasterSlavePacket_h
 
+#include "CommonPacket.h"
+
+class MasterSlavePacket
+{
+    struct OpenClientPortReqPacket
+    {
+        uint16_t port;
+    };
+    
+    struct OpenClientPortResPacket
+    {
+        char ip
+    };
+};
+
 
 #endif
