@@ -31,13 +31,20 @@ class NamedData
 private:
     string key;
     uint64_t ba;
-    void* tree;
+    void* tree;  // for radix tree.
 public:
     NamedData(string key, uint64_t ba)
     {
         this->key = key;
         this->ba = ba;
         this->tree = NULL;
+    }
+    NamedData(string key, uint64_t ba, void* addr)
+    {
+        
+        this->key = key;
+        this->ba = ba;
+        this->tree = addr;
     }
     string getKey() {  return this->key; }
     uint64_t getBlockAddress() {  return this->ba; }
@@ -56,7 +63,7 @@ class RadixTree
 {
 private:
     Node* headeNnode;
-    int dataSize;
+    uint32_t dataSize;
     
 private:
     int bits(uint32_t hash, int st);
@@ -100,6 +107,10 @@ public:
     bool insertData(string key, uint64_t ba);
     void deleteData(string key);
     NamedData* findData(string key);
+    uint32_t getSize() const
+    {
+        return this->dataSize;
+    }
 };
 
 #endif /* defined(__radixTreeCache__radix_tree__) */

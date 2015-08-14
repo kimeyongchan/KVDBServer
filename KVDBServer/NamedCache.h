@@ -7,18 +7,48 @@
 #include <cassert>
 #include<list>
 #include<algorithm>
+#include<map>
 
 #include "radix_tree.h"
 #include "Block.h"
 #include "SuperBlock.h"
-#include "lruQueue.h"
+#include "Data.h"
+#include "DirectoryData.h"
+#include "KeyValueData.h"
+#include "KeyValueChainingData.h"
 
+#define MAXNUMDATA 1000
 using namespace std;
 
-struct NameQueData
+class NamedQueData
 {
-    uint32_t hitCount;
+private:
+    uint32_t childCount;
     string key;
+public:
+    NamedQueData(string key)
+    {
+        childCount = 0;
+        this->key = key;
+    }
+    
+    NamedQueData(string key, uint32_t count)
+    {
+        this->childCount = count;
+        this->key = key;
+    }
+    void incChild()
+    {
+        childCount++;
+    }
+    string getKey() const
+    {
+        return this->key;
+    }
+    uint32_t getChildCount()
+    {
+        return childCount;
+    }
 };
 
 class NamedCache
@@ -26,21 +56,53 @@ class NamedCache
 private:
     
     NamedData* root;
-   // RadixTree* fRdTree;  //root block contents input
-    LruQueue<NameQueData> namedQue;
+    list<NamedQueData*> namedQue;
     
 public:
-	NamedCache(const SuperBlock* spBlock)
+	NamedCache(SuperBlock* spBlock)
 	{
-		//allocate radix tree.
-        //fRdTree = new RadixTree;
-	}
-
+        this->root = new NamedData("/", spBlock->getRootBlockAddress(),new RadixTree);
+        Block* rB = spBlock->getRootBlock();
+        const map<uint16_t,IndirectionData*>* dataMap = rB->getIndirectionDataMap();
+        
+        for(auto it = dataMap->begin(); it != dataMap->end(); ++it)
+        {
+            /*   make cache data in root block.  */
+            Data* d = it->second->data;
+            switch(d->getFormatType())
+            {
+                case FLAG_DIRECTORY_DATA:
+                {   uint64_t ba = ((DirectoryData*)d)->getIndBlockAddress();
+                    string key = ((DirectoryData*)d)->getKey();
+                    ((RadixTree*)this->root->getRadixTree())->insertData(key, ba);
+                    this->namedQue.push_back(new NamedQueData(key));
+                    break;
+                }
+                case FLAG_KEY_VALUE_DATA:
+                {
+                    uint64_t ba = this->root->getBlockAddress();
+                    string key = ((KeyValueData*)d)->getKey();
+                    ((RadixTree*)this->root->getRadixTree())->insertData(key, ba);
+                    this->namedQue.push_back(new NamedQueData(key));
+                    break;
+                }
+                case FLAG_KEY_VALUE_CHAINING_DATA:
+                {
+                    uint64_t ba = ((KeyValueChainingData*)d)->getIndBlockAddress();
+                    string key = ((KeyValueChainingData*)d)->getKey();
+                    ((RadixTree*)this->root->getRadixTree())->insertData(key, ba);
+                    this->namedQue.push_back(new NamedQueData(key));
+                    break;
+                }
+            }
+        }
+        
+    }
+    
 	void insert(NamedData* parent, NamedData* child);
     NamedData* findComponent(string component, NamedData* parent);
 	void deleteData(string component, NamedData* parent);
 	bool initFunction(const SuperBlock* spBlock);
-
 	
 };
 
