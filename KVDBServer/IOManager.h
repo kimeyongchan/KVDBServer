@@ -12,6 +12,7 @@ class FindRequestInfo;
 class DeleteRequestInfo;
 class Block;
 class Data;
+class NamedData;
 
 
 class NamedCacheData
@@ -76,8 +77,6 @@ public:
     void receiveMasterData(const ConnectInfo* connectInfo, const char* data, int dataSize);
     bool parsingQuery(const char* query, int queryLen, RequestInfo** pri);
 
-    
-    
 public:
     int8_t processInsert(InsertRequestInfo* reqInfo);
     int8_t processInsert(InsertDirectoryRequestInfo* reqInfo);
@@ -95,10 +94,21 @@ private:
     std::vector<std::string> split(const std::string &s, char delim);
     
     IoMgrReturnValue checkBufferCacheAndDisk(uint64_t indirectionBa, int curIdx, int lastIdx);
+    IoMgrReturnValue findBufferCacheAndDisk(uint64_t indirectionBa, int curIdx, int lastIdx);
     
     uint16_t ibaToOffsetIdx(uint64_t iba, uint64_t ba);
     uint64_t ibaToBa(uint64_t iba);
     bool compaction(Block* block);
+    bool caching(NamedData* firstParentData);
+    
+    
+private:
+    
+    void TEST_INSERT();
+    void TEST_INSERT_DIR();
+    void TEST_FIND();
+    void TEST_DELETE();
+    
     
 };
 
