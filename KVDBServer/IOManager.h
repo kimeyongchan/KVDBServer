@@ -46,6 +46,34 @@ public:
     }
 };
 
+class DirtyBlockInfo
+{
+public:
+    Block*      block;
+    bool        isAllocateBlock;
+    bool        isFreeBlock;
+    bool        isInsert;
+    uint64_t    blockAddress;
+    uint16_t    indirectionNum;
+    uint64_t    prevBlockAddress;
+    
+    DirtyBlockInfo(Block* dirtyBlock, bool isAlloc, bool isFree, bool insertState,
+                   uint64_t blockAdr, uint16_t indNum, uint64_t prevBlockAdr = 0)
+    {
+        block               = dirtyBlock;
+        isAllocateBlock     = isAlloc;
+        isFreeBlock         = isFree;
+        isInsert            = insertState;
+        blockAddress        = blockAdr;
+        indirectionNum      = indNum;
+        prevBlockAddress    = prevBlockAdr;
+        
+    }
+    
+    //isallocate = 0 , isFreeBlock = 1, isInsert = 0, blockAddress = 1번 블럭주소, uint16_t offsetLocation = 삭제할 데이터의 오프셋로케이션, uint16_t offset = 삭제할 데이터의 오프셋, const Data* data = 삭제할 데이터, int64_t prevBlockAddress = 0
+
+};
+
 class IoMgrReturnValue
 {
 public:
