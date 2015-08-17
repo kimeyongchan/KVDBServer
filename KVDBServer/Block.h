@@ -152,7 +152,7 @@ public:
     uint16_t getIndNumByKey(std::string componentKey);
     uint16_t getOffsetByIndNum(uint16_t indNum);
     uint16_t getOffsetByKey(std::string componentKey);
-    void getLargestDatasDistanceSize(uint16_t& largestDatasDistance, uint16_t& newOffset);
+    uint16_t getLargestDatasDistanceSize();
     
     
     const std::map<uint16_t, IndirectionData*>* getIndirectionDataMap() const

@@ -17,6 +17,7 @@ class NamedData;
 
 class NamedCacheData
 {
+public:
     int       componentIdx;
     uint64_t  indirectionBlockAdr;
     
@@ -27,6 +28,7 @@ class NamedCacheData
     }
 };
 
+/*
 class LogBufferInsertData
 {
 public:
@@ -45,6 +47,7 @@ public:
         data = d;
     }
 };
+ */
 
 class DirtyBlockInfo
 {
@@ -68,7 +71,7 @@ public:
         blockAddress        = blockAdr;
         indirectionNum      = indNum;
         prevBlockAddress    = prevBlockAdr;
-        isLoging  = logingState;  // 블럭에 체이닝 주소만 바뀌었을때 : 로깅 안해도됨, 디스크에는 써야 함
+        isLoging            = logingState;  // 블럭에 체이닝 주소만 바뀌었을때 : 로깅 안해도됨, 디스크에는 써야 함
         
     }
     
@@ -123,8 +126,8 @@ private:
     
     std::vector<std::string> split(const std::string &s, char delim);
     
-    IoMgrReturnValue checkBufferCacheAndDisk(uint64_t indirectionBa, int curIdx, int lastIdx);
-    IoMgrReturnValue findBufferCacheAndDisk(uint64_t indirectionBa, int curIdx, int lastIdx);
+    IoMgrReturnValue checkBufferCacheAndDisk(uint64_t indirectionBa, int curIdx, long lastIdx);
+    IoMgrReturnValue findBufferCacheAndDisk(uint64_t indirectionBa, int curIdx, long lastIdx);
     
     uint16_t ibaToOffsetIdx(uint64_t iba, uint64_t ba);
     uint64_t ibaToBa(uint64_t iba);

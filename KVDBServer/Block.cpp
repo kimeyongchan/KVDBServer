@@ -214,7 +214,7 @@ uint16_t Block::getOffsetByKey(std::string componentKey)
     return 0;
 }
 
-void Block::getLargestDatasDistanceSize(uint16_t& largestDatasDistance, uint16_t& newOffset)
+uint16_t Block::getLargestDatasDistanceSize()
 {
     std::vector<uint16_t> offsetList;  // 큰 오프셋 순으로 저장
     std::vector<uint16_t> indNumList;
@@ -258,8 +258,8 @@ void Block::getLargestDatasDistanceSize(uint16_t& largestDatasDistance, uint16_t
         
     }
     
-    largestDatasDistance = largestDatasDis;
-    newOffset = offsetList[necessaryIdx]+ dataList[necessaryIdx]->getDataSize();
+    return largestDatasDis;
+    
 }
 
 
