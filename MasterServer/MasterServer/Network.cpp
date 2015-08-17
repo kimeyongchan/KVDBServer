@@ -45,7 +45,7 @@ Network::~Network()
 #if OS_PLATFORM == PLATFORM_MAC
 //////////////////////////////////////////
 
-bool Network::Initialize(const NetworkInfo* _networkInfo, int _networkInfoCount, int _workerThreadCount, WorkerThread* _workerThreadArray, long _sendPingInterval, int _disconnectPingCount)
+bool Network::Initialize(const NetworkInfo* _networkInfo, int _networkInfoCount, int _workerThreadCount, WorkerThread** _workerThreadArray, long _sendPingInterval, int _disconnectPingCount)
 {
     
     memset(connectInfoList, 0, sizeof(ConnectInfo) * MAX_CONNECT_SIZE);
@@ -83,26 +83,26 @@ bool Network::Initialize(const NetworkInfo* _networkInfo, int _networkInfoCount,
     
     for (int i = 0; i < workerThreadCount; i++)
     {
-        if (workerThreadArray[i].Initialize() == false)
+        if (workerThreadArray[i]->Initialize() == false)
         {
             ErrorLog("worker thread error");
             return false;
         }
         
-        if (pthread_create(workerThreadArray[i].GetTid(), NULL, WorkerThreadFunction, (void*)&workerThreadArray[i]) != 0)
+        if (pthread_create(workerThreadArray[i]->GetTid(), NULL, WorkerThreadFunction, (void*)workerThreadArray[i]) != 0)
         {
             ErrorLog("thread create error : ");
             return false;
         }
         
-        workerThreadArray[i].tfd = i+10;
+        workerThreadArray[i]->tfd = i+10;
         
         EV_SET(&connectEvent, i+10, EVFILT_USER, EV_ADD | EV_ENABLE, 0, 0, NULL);
         
         if (kevent(eventFd, &connectEvent, 1, NULL, 0, NULL) == -1)
         {
             ErrorLog("kevent init error");
-            break;
+            return false;
         }
     }
 
@@ -198,7 +198,7 @@ bool Network::AddServerTypeNetworkInfo(const NetworkInfo* _networkInfo)
     if (kevent(eventFd, &connectEvent, 1, NULL, 0, NULL) == -1)
     {
         ErrorLog("kevent init error");
-//        return false;
+        return false;
     }
     
     
@@ -225,8 +225,6 @@ bool Network::AddClientTypeNetworkInfo(const NetworkInfo* _networkInfo)
     
     connectInfoList->serverModule = _networkInfo->module;
     
-//    _networkInfo->receiveHandler->IsConnected(connectInfoList);
-    
     EV_SET(&connectEvent, connectInfoList->fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, (void*)connectInfoList);
     
     if (kevent(eventFd, &connectEvent, 1, NULL, 0, NULL) == -1)
@@ -234,9 +232,9 @@ bool Network::AddClientTypeNetworkInfo(const NetworkInfo* _networkInfo)
         ErrorLog("kevent init error");
         return false;
     }
-    
-    sendDataToWorkerThread(RECEIVE_TYPE_CONNECT, connectInfo);
+
     connectInfo->flags |= FLAG_PROCESSING;
+    sendDataToWorkerThread(RECEIVE_TYPE_CONNECT, connectInfo);
     
     
     return true;
@@ -249,24 +247,33 @@ void Network::ProcessEvent()
     long timeInterval;
     
     struct timespec waitTime;
+
 	while(true)
 	{
-        timeInterval = getCustomCurrentTime() - lastPingCheckTime;
-        if(timeInterval >= sendPingInterval)
+        if(wait.tv_sec == 0 && wait.tv_nsec == 0)
         {
-            pingCheck();
-            
-            waitTime.tv_sec = wait.tv_sec;
-            waitTime.tv_nsec = wait.tv_nsec;
+            eventCnt = kevent(eventFd, NULL, 0, event, EVENT_BUFFER_SIZE, NULL);
         }
         else
         {
-            long waitInterval = sendPingInterval - timeInterval;
-            waitTime.tv_sec = waitInterval / 1000;
-            waitTime.tv_nsec = (waitInterval % 1000) * 1000000;
+            timeInterval = getCustomCurrentTime() - lastPingCheckTime;
+            if(timeInterval >= sendPingInterval)
+            {
+                pingCheck();
+                
+                waitTime.tv_sec = wait.tv_sec;
+                waitTime.tv_nsec = wait.tv_nsec;
+            }
+            else
+            {
+                long waitInterval = sendPingInterval - timeInterval;
+                waitTime.tv_sec = waitInterval / 1000;
+                waitTime.tv_nsec = (waitInterval % 1000) * 1000000;
+            }
+            
+            eventCnt = kevent(eventFd, NULL, 0, event, EVENT_BUFFER_SIZE, &waitTime);
         }
         
-        eventCnt = kevent(eventFd, NULL, 0, event, EVENT_BUFFER_SIZE, &waitTime);
         
 		if (eventCnt < 0)
 		{
@@ -318,8 +325,8 @@ void Network::ProcessEvent()
                             break;
                         }
                         
-                        sendDataToWorkerThread(RECEIVE_TYPE_CONNECT, connectInfo);
                         connectInfo->flags |= FLAG_PROCESSING;
+                        sendDataToWorkerThread(RECEIVE_TYPE_CONNECT, connectInfo);
                         
                         break;
                     }
@@ -352,12 +359,6 @@ void Network::ProcessEvent()
                     
                     int tempBufferSize = tempBufferInfo->tempBufferSize;
                     
-               /*     bool isTempBufferInfoEmpty;
-                    if(tempBufferSize == 0)
-                        isTempBufferInfoEmpty = true;
-                    else
-                        isTempBufferInfoEmpty = false;
-               */
                     
                     if(tempBufferSize != 0)
                     {
@@ -384,8 +385,6 @@ void Network::ProcessEvent()
                             connectInfo->tempBufferInfo.tempBufferSize = wholeRecvBufferSize;
                             connectInfo->tempBufferInfo.tempBuffer = (char*)malloc(sizeof(char) * wholeRecvBufferSize);
                             memcpy(connectInfo->tempBufferInfo.tempBuffer, wholeRecvBuffer, wholeRecvBufferSize);
-                            
-                            //memset(recvBuffer, 0, readCnt);
                             
                             break;
                         }
@@ -415,13 +414,12 @@ void Network::ProcessEvent()
                             else
                             {
                                 ErrorLog("pWholeRecvBufferSize - %d", pWholeRecvBufferSize);
-                                //return ;
+                                return ;
                             }
                             
                         }
                         else if (flags == DATA_TYPE_PING_OK)
                         {
-                            DebugLog("ping ok");
                             connectInfo->sendPingCount = 0;
                             
                             if(pWholeRecvBufferSize == 0)
@@ -457,7 +455,6 @@ void Network::ProcessEvent()
                             pWholeRecvBuffer += sizeof(dataSize);
                             pWholeRecvBufferSize -= sizeof(dataSize);
                         
-                            //int recvDataSize = pWholeRecvBufferSize - sizeof(dataSize);
                         
                             if(dataSize <= pWholeRecvBufferSize)
                             {
@@ -531,11 +528,6 @@ void Network::ProcessEvent()
                     else
                     {
                         sendDataToWorkerThread(RECEIVE_TYPE_DISCONNECT, connectInfo);
-                        
-//                        if(DelClientPool(clntFd) == false)
-//                        {
-//                            ErrorLog("DelClient error %d", clntaddr);
-//                        }
                     }
                 }
                 else
@@ -556,11 +548,6 @@ void Network::ProcessEvent()
                     else
                     {
                         sendDataToWorkerThread(RECEIVE_TYPE_DISCONNECT, connectInfo);
-                        
-                        //                        if(DelClientPool(clntFd) == false)
-                        //                        {
-                        //                            ErrorLog("DelClient error %d", clntaddr);
-                        //                        }
                     }
                 }
             }
@@ -627,7 +614,7 @@ void Network::sendDataToWorkerThread(int receiveType, ConnectInfo* const _connec
     
     for(int i = 0; i < workerThreadCount; i++)
     {
-        secondCnt = workerThreadArray[i].getDataPacketCount();
+        secondCnt = workerThreadArray[i]->getDataPacketCount();
         
         if(firstCnt > secondCnt)
         {
@@ -636,7 +623,7 @@ void Network::sendDataToWorkerThread(int receiveType, ConnectInfo* const _connec
         }
     }
     
-    workerThreadArray[fitNum].PushDataPacket(dp);
+    workerThreadArray[fitNum]->PushDataPacket(dp);
     
     return ;
 }
@@ -646,7 +633,7 @@ void Network::sendData(const ConnectInfo* connectInfo, const char* data, int dat
     ssize_t sendCnt = send(connectInfo->fd, (void*)data, dataSize, NULL);
     if(sendCnt < 0)
     {
-        DebugLog("%d, %d", connectInfo->fd, connectInfo->flags);
+        ErrorLog("%d, %d", connectInfo->fd, connectInfo->flags);
     }
 }
 
@@ -677,7 +664,6 @@ void Network::finishProcessing(int threadId, const ConnectInfo* connectInfo)
 
 void Network::pingCheck()
 {
-    DebugLog("ping check");
     long currentTime = getCustomCurrentTime();
     
     dataType_t dataTypeToSend = DATA_TYPE_PING_NOTIFY;
@@ -710,7 +696,6 @@ void Network::pingCheck()
                 }
                 else
                 {
-                    DebugLog("send ping notiy");
                     sendData(&connectInfoList[i], (char*)&dataTypeToSend, sizeof(dataTypeToSend));
                     
                 }
@@ -729,7 +714,7 @@ int Network::CreateTCPServerSocket(const char* ip, unsigned short port)
 
 	if ((sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
 	{
-		printf("socket() failed.\n");
+		ErrorLog("socket() failed.\n");
 		return -1;
 	}
 
@@ -740,12 +725,12 @@ int Network::CreateTCPServerSocket(const char* ip, unsigned short port)
 
 	if (bind(sock, (struct sockaddr*)&servaddr, sizeof(struct sockaddr_in)) < 0)
 	{
-		printf("Bind() failed.\n");
+		ErrorLog("Bind() failed.\n");
 		return -2;
 	}
 
 	if (listen(sock, SOMAXCONN)) {
-		printf("Listen() failed.\n");
+		ErrorLog("Listen() failed.\n");
 		return -3;
 	}
 
@@ -759,7 +744,7 @@ int Network::CreateTCPClientSocket(const char* ip, unsigned short port)
     
     if ((sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
     {
-        printf("socket() failed.\n");
+        ErrorLog("socket() failed.\n");
         return -1;
     }
     
@@ -770,7 +755,7 @@ int Network::CreateTCPClientSocket(const char* ip, unsigned short port)
 
     if(connect(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0)
     {
-        printf("can't connect.\n");
+        ErrorLog("can't connect.\n");
         return -2;
     }
     
