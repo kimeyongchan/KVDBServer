@@ -15,6 +15,7 @@ int RadixTree::bits(uint32_t hash, int st)
 
 Node* RadixTree::allocateEachNode(int idx[DEPTH])
 {
+    
     Node* temp = this->headNode;
     for(int i = 0; i < DEPTH; i++)
     {
@@ -70,7 +71,7 @@ bool RadixTree::insertData(string key, uint64_t ba)
     cout<<endl;
     
     /* allocate memory */
-    Node* value = allocateEachNode(idx);
+    Node* value = allocateEachNode(idx);   //error
     
     if(value == NULL)
         cout<< "error in insertData"<<endl;
@@ -85,7 +86,6 @@ bool RadixTree::insertData(string key, uint64_t ba)
             
                 nd = new NamedData(key,ba);
                 rt = nd->getRadixTree();
-                rt = new RadixTree;
                 cout << "rt" <<rt << endl;
             }catch(bad_alloc& e)
             {

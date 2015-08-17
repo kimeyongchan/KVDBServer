@@ -18,6 +18,9 @@ void NamedCache::insert(NamedData* parent, NamedData* child)
     }
     
     RadixTree* rt = (RadixTree*)parent->getRadixTree();
+    if(child->getRadixTree() == NULL)
+        child->insertVoidRadix(new RadixTree);
+    
     bool success = rt->insertData(child->getKey(), child->getBlockAddress());
     if(success == true)
     {

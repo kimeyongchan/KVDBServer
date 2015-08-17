@@ -44,12 +44,13 @@ public:
         
         this->key = key;
         this->ba = ba;
-        this->tree = addr;
+        this->tree = addr; 
     }
     string getKey() {  return this->key; }
     uint64_t getBlockAddress() {  return this->ba; }
     void* getRadixTree() { return this->tree; }
     void insertVoidRadix(void* addr) { this->tree = addr; }
+
 };
 
 struct Node
