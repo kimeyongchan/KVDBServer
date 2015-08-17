@@ -62,7 +62,7 @@ struct Node
 class RadixTree
 {
 private:
-    Node* headeNnode;
+    Node* headNode;
     uint32_t dataSize;
     
 private:
@@ -76,7 +76,7 @@ public:
     {
         this->dataSize = 0;
         try{
-            this->headeNnode = new Node();
+            this->headNode = new Node();
             
             
         }catch(bad_alloc& e)
@@ -87,14 +87,14 @@ public:
     }
     ~RadixTree()
     {
-        //delete all;
+        
     }
     
     RadixTree(NamedData* data)
     {
         this->dataSize = 0;
         try{
-            this->headeNnode = new Node();
+            this->headNode = new Node();
             insertData(data->getKey(), data->getBlockAddress());
             
         }catch(bad_alloc& e)
@@ -111,6 +111,7 @@ public:
     {
         return this->dataSize;
     }
+
 };
 
 #endif /* defined(__radixTreeCache__radix_tree__) */

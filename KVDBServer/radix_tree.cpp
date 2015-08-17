@@ -8,8 +8,6 @@
 
 #include "radix_tree.h"
 
-
-
 int RadixTree::bits(uint32_t hash, int st)
 {
     return (hash & (0x1 << st)) >> st;
@@ -17,7 +15,7 @@ int RadixTree::bits(uint32_t hash, int st)
 
 Node* RadixTree::allocateEachNode(int idx[DEPTH])
 {
-    Node* temp = this->headeNnode;
+    Node* temp = this->headNode;
     for(int i = 0; i < DEPTH; i++)
     {
         try {
@@ -80,10 +78,20 @@ bool RadixTree::insertData(string key, uint64_t ba)
     {
         if(findData(key) == NULL)
         {
-            NamedData* nd = new NamedData(key,ba);
-            void * rt = nd->getRadixTree();
-            rt = new RadixTree;
-            cout << "rt" <<rt << endl;
+            NamedData* nd ;
+            void * rt;
+            try{
+            
+            
+                nd = new NamedData(key,ba);
+                rt = nd->getRadixTree();
+                rt = new RadixTree;
+                cout << "rt" <<rt << endl;
+            }catch(bad_alloc& e)
+            {
+                cout<<e.what()<<endl;
+            }
+            
             nd->insertVoidRadix(rt);
             value->listValue.push_back(nd);
             this->dataSize++;
@@ -100,7 +108,7 @@ Node* RadixTree::getLastNode(string key)
     
     createIndex(key, idx);
     
-    Node* temp = this->headeNnode;
+    Node* temp = this->headNode;
     
     for(int i=0;i<DEPTH;i++)
     {
@@ -136,7 +144,7 @@ void RadixTree::deleteData(string key)
     
     if(temp->listValue.size() == 0 ) // no value in Radix tree.
     {
-        Node* upper = this->headeNnode;
+        Node* upper = this->headNode;
         Node* lower;
         for(int i = 0; i < DEPTH; i++)
         {
@@ -172,11 +180,12 @@ string RadixTree::findKey(string key)
 NamedData* RadixTree::findData(string key)
 {
     
+
     int idx[DEPTH] = { 0, };
     
     createIndex(key, idx);
     
-    Node* temp = this->headeNnode;
+    Node* temp = this->headNode;
     
     //need error handler.
     try{

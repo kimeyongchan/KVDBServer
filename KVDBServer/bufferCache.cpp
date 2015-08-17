@@ -76,7 +76,7 @@ uint64_t BufferCache::newBlock()
 	{
 		if (bitArr[i] == 0)
 		{
-            uint64_t ba =i*spB->getBlockSize();  // index * block size -> addr?
+            uint64_t ba =(i+1)*spB->getBlockSize();  // index * block size -> addr?
             this->bufferQueue.push_back(ba);
             return ba;
 		}
@@ -92,4 +92,12 @@ void BufferCache::deleteDirty(uint64_t ba)
 	//cache remove
 	this->bc.erase(ba);
 
+}
+
+void BufferCache::setBitArrayFlag(uint64_t ba)
+{
+    uint64_t idx = (ba / BLOCK_SIZE )- 1;
+    char* bitArray = this->spB->getUsingBlockBitArray();
+    bitArray[idx]? bitArray[idx] =1 : bitArray[idx] = 0;
+    
 }

@@ -5,7 +5,16 @@ void NamedCache::insert(NamedData* parent, NamedData* child)
     
     if(namedQue.size() > MAXNUMDATA)
     {
-            //arrange Queue 
+        for(auto it = namedQue.begin(); it != namedQue.end(); ++it)
+        {
+            if((*it)->getChildCount() > 0)
+                continue;
+            else
+            {
+                deleteData(child->getKey(), parent);
+                this->namedQue.remove(*it);
+            }
+        }
     }
     
     RadixTree* rt = (RadixTree*)parent->getRadixTree();
@@ -19,7 +28,7 @@ void NamedCache::insert(NamedData* parent, NamedData* child)
                 {
                     (*it)->incChild();
                     NamedQueData* newData = new NamedQueData(parent->getKey(), (*it)->getChildCount());
-                    delete (*it);
+                    this->namedQue.remove((*it));
                     this->namedQue.push_back(newData);
                 }
         }

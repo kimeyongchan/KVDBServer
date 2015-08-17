@@ -1,3 +1,6 @@
+#ifndef __BUFFERCACHE__
+#define __BUFFERCACHE__
+
 #include<map>
 #include<list>
 
@@ -9,7 +12,7 @@ using namespace std;
 class BufferCache
 {
 private:
-	map<uint64_t, Block*> bc;
+	map<uint64_t, Block*> bc;  //concurrent map??
     list<uint64_t> bufferQueue;
     SuperBlock* spB;
 public:
@@ -26,6 +29,8 @@ public:
 	
 	bool getDeleteBlock(uint64_t& rtba, Block& rtblk);
 	void deleteDirty(uint64_t ba);
-    
+    void setBitArrayFlag(uint64_t ba);
   
 };
+
+#endif
