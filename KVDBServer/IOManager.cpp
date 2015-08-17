@@ -249,15 +249,13 @@ bool IOManager::parsingQuery(const char* query, int queryLen, RequestInfo** pri)
 
 int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
 {
-
 /*
      DebugLog("INSERT - key : %s, value : %s ", reqInfo->key.c_str(), reqInfo->value.c_str());
 
      componentList.clear();
      namedCacheDataList.clear();                         // 네임드캐시
      insertBufferCacheDataMap.clear();                   // 버퍼캐시
-     std::vector<LogBufferInsertData> logBufferDataList; // 로그 버퍼
-     std::map<uint64_t, Block*>  diskWriteDataMap;       // 디스크
+    std::vector<DirtyBlockInfo> dirtyBlockInfoList;
      
      NamedData* parentNamedData;
      uint64_t indirectionBlockAdr =0;
@@ -345,12 +343,8 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
          block->insertData(newIndirectionNumber, newOffset, data);
          
          // 로그버퍼에 넣을 데이터
-         uint64_t indBlockAdr = block->getIndirectionBlockAdr(blockAdr, newIndirectionNumber);
-         LogBufferInsertData logBufData(false, true, indBlockAdr, newOffset, data);
-         logBufferDataList.push_back(logBufData);
+         dirtyBlockInfoList.push_back(DirtyBlockInfo(block, false, false, true, blockAdr, newIndirectionNumber));
          
-         // 디스크에 쓸 데이터
-         diskWriteDataMap.insert(std::pair<uint64_t, Block*>(blockAdr, block));
          
          
      }else // chaining 필요하다.
@@ -361,11 +355,13 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
          if(minimumBlockSize > block->getFreeSpace())
              return -4; // 최소 체이닝 할수 있는 데이터 크기조차 넣을 수 없다.
          
-         
          uint32_t remainValueSize = reqInfo->value.size();
          Block*   curBlock = block;
          uint64_t logBufferIndBlockAdr = indirectionBlockAdr;
          uint64_t diskBlockAdr = blockAdr;
+         bool     isAllockBlock = false;
+         uint64_t prevBlockAdr = 0;
+         
          
          while(remainValueSize > 0)
          {
@@ -382,13 +378,8 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
                  uint16_t newOffset = curBlock->getNewOffset(data->getDataSize());
                  curBlock->insertData(curBlock->getNewIndirectionNumber(), newOffset, data);
                  
-                 // 로그버퍼에 넣을 데이터
-                 uint16_t curBlockNewOffset = curBlock->getNewOffset(data->getDataSize());
-                 LogBufferInsertData logBufData(true, true, logBufferIndBlockAdr, curBlockNewOffset, data);
-                 logBufferDataList.push_back(logBufData);
-                 
-                 // 디스크에 쓸 데이터
-                 diskWriteDataMap.insert(std::pair<uint64_t, Block*>(diskBlockAdr, curBlock));
+                 uint16_t indNum = ibaToOffsetIdx(logBufferIndBlockAdr, diskBlockAdr);
+                 dirtyBlockInfoList.push_back(DirtyBlockInfo(curBlock, isAllockBlock, false, true, diskBlockAdr, indNum, prevBlockAdr));
                  
                  break;
              }
@@ -418,69 +409,66 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
              uint16_t curBlockNewOffset = curBlock->getNewOffset(data->getDataSize());
              curBlock->insertData(curBlock->getNewIndirectionNumber(), curBlockNewOffset, data); // 이때 freeSpace 줄어든다.
              
-             if(remainValueSize >0)
-                 curBlock->setChainingAddress(newChingingBlockAdr);  // 블럭에 체이닝 블럭 주소 세팅 해준다.
+             
+             curBlock->setChainingAddress(newChingingBlockAdr);  // 블럭에 체이닝 블럭 주소 세팅 해준다.
              
              // 버퍼캐시에 넣을 데이터
              insertBufferCacheDataMap.insert(std::pair<uint64_t, Block*>(newChingingBlockAdr, newChainingBlock)); // 체이닝 블럭 넣기
              
-             // 로그버퍼에 넣을 데이터
-             if(logBufferDataList.size() ==0)
-             {
-                 LogBufferInsertData logBufData(false, true, logBufferIndBlockAdr, curBlockNewOffset, data);
-                 logBufferDataList.push_back(logBufData);
-                 
-             }else
-             {
-                 LogBufferInsertData logBufData(true, true, logBufferIndBlockAdr, curBlockNewOffset, data);
-                 logBufferDataList.push_back(logBufData);
-             }
              
-             // 디스크에 쓸 데이터
-             diskWriteDataMap.insert(std::pair<uint64_t, Block*>(diskBlockAdr, curBlock));
+             uint16_t indNum = ibaToOffsetIdx(logBufferIndBlockAdr, diskBlockAdr);
+             dirtyBlockInfoList.push_back(DirtyBlockInfo(curBlock, isAllockBlock, false, true, diskBlockAdr, indNum, prevBlockAdr));
              
              
              curBlock = newChainingBlock;
              logBufferIndBlockAdr = newBlockIndAdr;
              diskBlockAdr = newChingingBlockAdr;
+             isAllockBlock = true;
+             prevBlockAdr = diskBlockAdr;
          }
          
      }// while end
      
     // 캐싱한다
     caching(parentNamedData);
+
+    // 로그버퍼에 넣는다
+    for(DirtyBlockInfo blockInfo : dirtyBlockInfoList)
+    {
+        
+        Block*     block    = blockInfo.block;
+        uint64_t   blockAdr = blockInfo.blockAddress;
+        uint16_t   indNum   = blockInfo.indirectionNum;
+        uint16_t   offset   = blockInfo.block->getOffsetByIndNum(indNum);
+        Data*      data     = blockInfo.block->getData(indNum);
+        
+        
+        KVDBServer::getInstance()->logBuffer->saveLog(blockInfo.isAllocateBlock,
+                                                      blockInfo.isInsert, blockAdr, offset, data);  // 바꿔줘야함
+        //KVDBServer::getInstance()->logBuffer->saveLog(blockInfo.isAllocateBlock,blockInfo.isFreeBlock, blockInfo.isInsert,
+        //                                             blockAdr, indNum ,offset, data, blockInfo.prevBlockAddress);
+    }
     
-    
-     // 로그버퍼에 넣는다
-     LogBuffer* logBuffer = KVDBServer::getInstance()->logBuffer;
-     for(LogBufferInsertData data: logBufferDataList)
-         logBuffer->saveLog(data.isAllocateBlock, data.isInsert, data.indBlockAddress, data.offset, data.data);
-     
-     
-     
+
      // 로그파일에 쓴다
      const char* log;
-     logBuffer->readLogBuffer(&log);
+     KVDBServer::getInstance()->logBuffer->readLogBuffer(&log);
      KVDBServer::getInstance()->logFile->writeLogFile(strlen(log), log);
  
      // 로그버퍼 클리어
-     logBuffer->clear();
+     KVDBServer::getInstance()->logBuffer->clear();
      
      
      //디스크에 쓴다.
-     for(auto iter = diskWriteDataMap.begin(); iter != diskWriteDataMap.end(); ++iter)
-     {
-         uint64_t blockAdr = iter->first;
-         Block* block = iter->second;
-         
-         KVDBServer::getInstance()->m_diskManager->writeDisk()(iter->first, iter->second));
-         
-         block->setDirty(false);
-     }
-     
+    for(DirtyBlockInfo blockInfo : dirtyBlockInfoList)
+    {
+        KVDBServer::getInstance()->diskManager->writeBlock(blockInfo.blockAddress,blockInfo.block);
+        blockInfo.block->setDirty(false);
+    }
+    
      
      // 로그파일 클리어
-     KVDBServer::getInstance()->m_logFile->clear();
+     KVDBServer::getInstance()->logFile->clear();
      */
      
      return 0;
@@ -497,7 +485,7 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
     componentList.clear();
     insertBufferCacheDataMap.clear();
     namedCacheDataList.clear();
-    std::map<uint64_t, Block*>  diskWriteDataMap; //<블럭주소, 블럭>
+    std::vector<DirtyBlockInfo> dirtyBlockInfoList;
 
     NamedData* parentNamedData;
     uint64_t indirectionBlockAdr =0;
@@ -551,6 +539,9 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
     
      
      // 새블럭 만들어서 찾은 마지막 블럭 데이터에 새블럭 첫번째 인다이렉션블럭주소를 저장시켜줘야 한다.
+     Block*     block    = returnVal.block;
+     uint64_t   blockAdr = ibaToBa(indirectionBlockAdr);
+     
      
      // 1. 새블럭을 만들어준다.
      uint64_t newBlockAdr = cacheMgr->getNewBlockAdr();
@@ -586,24 +577,22 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
     if(lastBlockAdr == 0) // 프리사이즈 넣을 블럭 없으면 새로운 블럭 생성
    {
        uint64_t newLastBlockAdr = cacheMgr->getNewBlockAdr();
-       returnVal.block->setChainingAddress(newLastBlockAdr);  // 마지막 블럭에 새로 생성한 마지막 블럭의 주소를 체이닝 해준다.
        Block* newLastBlock = new Block();
        uint16_t offSet = newLastBlock->getNewOffset(data->getDataSize());
        uint16_t offsetIdx = newLastBlock->getNewIndirectionNumber();
        uint64_t newLastIndBlockAdr = newLastBlock->getIndirectionBlockAdr(newLastBlockAdr, offsetIdx);
        newLastBlock->insertData(offsetIdx, offSet, data);
        
+       returnVal.block->setChainingAddress(newLastBlockAdr);  // 마지막 블럭에 새로 생성한 마지막 블럭의 주소를 체이닝 해준다.
        
+       // 캐시버퍼용 데이터
        insertBufferCacheDataMap.insert(std::pair<uint64_t, Block*>(newLastBlockAdr, newLastBlock));
        insertBufferCacheDataMap.insert(std::pair<uint64_t, Block*>(newBlockAdr, newBlock));
        
-       // 로그버퍼 쓸때 블럭 체이닝 주소 바뀌었을때 저장할 수있는 함수가 없다.>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>용찬이에게 물어봄
-       logBufferData   = LogBufferInsertData(true, true, newLastIndBlockAdr, offsetIdx, data);
-       // 새로생성된 마지막 블럭에 넣어진 데이터 값에 연결된 새로 생성된 블럭에 대해 로깅할 수있는 함수가 없다.>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>용찬이에게 물어봄
-       
-       diskWriteDataMap.insert(std::pair<uint64_t, Block*>(indirectionBlockAdr, returnVal.block));
-       diskWriteDataMap.insert(std::pair<uint64_t, Block*>(newLastBlockAdr, newLastBlock));
-       diskWriteDataMap.insert(std::pair<uint64_t, Block*>(newBlockAdr, newBlock));
+       // 로깅, 디스크 용
+       dirtyBlockInfoList.push_back(DirtyBlockInfo(returnVal.block, false, false, true, blockAdr, 0, 0, false)); // 로깅은 안한다.
+       dirtyBlockInfoList.push_back(DirtyBlockInfo(newLastBlock, true, false, true, newLastBlockAdr, offsetIdx, blockAdr));
+       dirtyBlockInfoList.push_back(DirtyBlockInfo(newBlock, true, false, true, newBlockAdr, 0, 0, false)); // 로깅은 안한다.
        
        
    }else // 기존 블럭에 넣을 수 있으면 컴팩션 여부 확인한다.
@@ -621,12 +610,12 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
        uint64_t indBlockAdr = lastBlock->getIndirectionBlockAdr(lastBlockAdr, offsetIdx);
        lastBlock->insertData(offsetIdx, offSet, data);
        
+       // 캐시버퍼용
        insertBufferCacheDataMap.insert(std::pair<uint64_t, Block*>(newBlockAdr, newBlock));
        
-       logBufferData    = LogBufferInsertData(false, true, indBlockAdr, offset, data);
-       
-       diskWriteDataMap.insert(std::pair<uint64_t, Block*>(lastBlockAdr, lastBlock));
-       diskWriteDataMap.insert(std::pair<uint64_t, Block*>(newBlockAdr, newBlock));
+       // 로깅, 디스크 용
+       dirtyBlockInfoList.push_back(DirtyBlockInfo(lastBlock, false, false, true, lastBlockAdr, offsetIdx)); // 로깅은 안한다.
+       dirtyBlockInfoList.push_back(DirtyBlockInfo(newBlock, true, false, true, newBlockAdr, 0, 0, false)); // 로깅은 안한다.
    }
                    
        // 캐싱한다
@@ -634,31 +623,41 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
       
       
       // 로그버퍼에 넣는다
-      LogBuffer* logBuffer = KVDBServer::getInstance()->m_logBuffer;
-      logBuffer->saveLog(logBufferData.isAllocateBlock,logBufferData.isInsert, logBufferData.indBlockAddress, logBufferData.offset, logBufferData.data);
-     
-      
+       for(DirtyBlockInfo blockInfo : dirtyBlockInfoList)
+       {
+           
+           Block*     block    = blockInfo.block;
+           uint64_t   blockAdr = blockInfo.blockAddress;
+           uint16_t   indNum   = blockInfo.indirectionNum;
+           uint16_t   offset   = blockInfo.block->getOffsetByIndNum(indNum);
+           Data*      data     = blockInfo.block->getData(indNum);
+           
+           
+           if(blockInfo.isLoging == true)
+               KVDBServer::getInstance()->logBuffer->saveLog(blockInfo.isAllocateBlock,
+                                                         blockInfo.isInsert, blockAdr, offset, data);  // 바꿔줘야함
+           //KVDBServer::getInstance()->logBuffer->saveLog(blockInfo.isAllocateBlock,blockInfo.isFreeBlock, blockInfo.isInsert,
+           //                                             blockAdr, indNum ,offset, data, blockInfo.prevBlockAddress);
+       }
+       
       // 로그파일에 쓴다
         const char* log;
-        logBuffer->readLogBuffer(&log);
+        KVDBServer::getInstance()->logBuffer->readLogBuffer(&log);
         KVDBServer::getInstance()->logFile->writeLogFile(strlen(log), log);
  
       // 로그버퍼 클리어
-      logBuffer->clear();
+      KVDBServer::getInstance()->logBuffer->clear();
       
-      //디스크에 쓴다.
-      for(auto iter = diskWriteDataMap.begin(); iter != diskWriteDataMap.end(); ++iter)
-      {
-          uint64_t blockAdr = iter->first;
-          Block* block = iter->second;
-          
-          KVDBServer::getInstance()->m_diskManager->writeDisk()(iter->first, iter->second));
-          
-          block->setDirty(false);
-      }
+ 
+       //디스크에 쓴다.
+       for(DirtyBlockInfo blockInfo : dirtyBlockInfoList)
+       {
+           KVDBServer::getInstance()->diskManager->writeBlock(blockInfo.blockAddress,blockInfo.block);
+           blockInfo.block->setDirty(false);
+       }
       
       // 로그파일 클리어
-      KVDBServer::getInstance()->m_logFile->clear();
+      KVDBServer::getInstance()->logFile->clear();
    
     */
       return 0;
