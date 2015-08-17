@@ -24,7 +24,7 @@ void* WorkerThreadFunction(void *data)
     return NULL;
 }
 
-long getCustomCurrentTime()
+long Network::getCustomCurrentTime()
 {
     struct timeval tv;
     gettimeofday(&tv, NULL);
@@ -45,7 +45,7 @@ Network::~Network()
 #if OS_PLATFORM == PLATFORM_MAC
 //////////////////////////////////////////
 
-bool Network::Initialize(const NetworkInfo* _networkInfo, int _networkInfoCount, int _workerThreadCount, WorkerThread* _workerThreadArray)
+bool Network::Initialize(const NetworkInfo* _networkInfo, int _networkInfoCount, int _workerThreadCount, WorkerThread* _workerThreadArray, long _sendPingInterval, int _disconnectPingCount)
 {
     
     memset(connectInfoList, 0, sizeof(ConnectInfo) * MAX_CONNECT_SIZE);
@@ -56,48 +56,12 @@ bool Network::Initialize(const NetworkInfo* _networkInfo, int _networkInfoCount,
         connectInfoList[i].flags = 0;
         connectInfoList[i].serverModule = -1;
         connectInfoList[i].lastPingTime = 0;
+        connectInfoList[i].userData = NULL;
         connectInfoList[i].tempDataQueue.clear();
         memset(&connectInfoList[i].tempBufferInfo, 0, sizeof(TempBufferInfo));
         
     }
     
- 
-    listenSocketCount = 0;
-    
-    for (int i = 0; i < _networkInfoCount; i++)
-        if(_networkInfo[i].type == SERVER_TYPE_SERVER)
-            listenSocketCount++;
-
-    serverConnectInfoList = new ConnectInfo[listenSocketCount]; // (ConnectInfo*)malloc(sizeof(ConnectInfo) * listenSocketCount);
-    
-    listenSocketCount = 0;
-
-    for(int i=0; i < _networkInfoCount; i++)
-    {
-        int type = _networkInfo[i].type;
-        
-        if(type == SERVER_TYPE_SERVER)
-        {
-            if(AddServerTypeNetworkInfo(&_networkInfo[i]) == false)
-            {
-                ErrorLog("AddServerType NetworkInfo error");
-                return false;
-            }
-        }
-        else if(type == SERVER_TYPE_CLIENT)
-        {
-            if(AddClientTypeNetworkInfo(&_networkInfo[i]) == false)
-            {
-                ErrorLog("AddClientType NetworkInfo error");
-                return false;
-            }
-        }
-        else
-        {
-            ErrorLog("type error - %d", type);
-            return false;
-        }
-    }
     
     eventFd = kqueue();
     if (eventFd < 0) {
@@ -106,12 +70,7 @@ bool Network::Initialize(const NetworkInfo* _networkInfo, int _networkInfoCount,
     }
     
     event = (struct kevent*)malloc(sizeof(struct kevent)*EVENT_BUFFER_SIZE);
-    
-    if (kevent(eventFd, &connectEvent, 1, NULL, 0, NULL) < 0)
-    {
-        ErrorLog("kevent init error");
-        return false;
-    }
+ 
     
     memset(recvBuffer, 0, RECV_BUF);
 
@@ -146,6 +105,55 @@ bool Network::Initialize(const NetworkInfo* _networkInfo, int _networkInfoCount,
             break;
         }
     }
+    
+
+    sendPingInterval = _sendPingInterval;
+    disconnectPingCount = _disconnectPingCount;
+
+    
+    wait.tv_sec = sendPingInterval / 2 / 1000;
+    wait.tv_nsec = ((sendPingInterval / 2) % 1000) * 1000000;
+    
+    
+    listenSocketCount = 0;
+    
+    for (int i = 0; i < _networkInfoCount; i++)
+        if(_networkInfo[i].type == SERVER_TYPE_SERVER)
+            listenSocketCount++;
+    
+    serverConnectInfoList = new ConnectInfo[listenSocketCount]; // (ConnectInfo*)malloc(sizeof(ConnectInfo) * listenSocketCount);
+    
+    listenSocketCount = 0;
+    
+    for(int i=0; i < _networkInfoCount; i++)
+    {
+        int type = _networkInfo[i].type;
+        
+        if(type == SERVER_TYPE_SERVER)
+        {
+            if(AddServerTypeNetworkInfo(&_networkInfo[i]) == false)
+            {
+                ErrorLog("AddServerType NetworkInfo error");
+                return false;
+            }
+        }
+        else if(type == SERVER_TYPE_CLIENT)
+        {
+            if(AddClientTypeNetworkInfo(&_networkInfo[i]) == false)
+            {
+                ErrorLog("AddClientType NetworkInfo error");
+                return false;
+            }
+        }
+        else
+        {
+            ErrorLog("type error - %d", type);
+            return false;
+        }
+    }
+    
+    
+    lastPingCheckTime = getCustomCurrentTime();
     
 	return true;
 }
@@ -187,6 +195,12 @@ bool Network::AddServerTypeNetworkInfo(const NetworkInfo* _networkInfo)
     
     EV_SET(&connectEvent, serverConnectInfoList[listenSocketCount].fd, EVFILT_READ, EV_ADD, 0, 0, (void*)&serverConnectInfoList[listenSocketCount]);
     
+    if (kevent(eventFd, &connectEvent, 1, NULL, 0, NULL) == -1)
+    {
+        ErrorLog("kevent init error");
+//        return false;
+    }
+    
     
     listenSocketCount++;
     
@@ -215,6 +229,16 @@ bool Network::AddClientTypeNetworkInfo(const NetworkInfo* _networkInfo)
     
     EV_SET(&connectEvent, connectInfoList->fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, (void*)connectInfoList);
     
+    if (kevent(eventFd, &connectEvent, 1, NULL, 0, NULL) == -1)
+    {
+        ErrorLog("kevent init error");
+        return false;
+    }
+    
+    connectInfo->flags |= FLAG_PROCESSING;
+    sendDataToWorkerThread(RECEIVE_TYPE_CONNECT, connectInfo);
+    
+    
     return true;
 }
 
@@ -222,14 +246,45 @@ bool Network::AddClientTypeNetworkInfo(const NetworkInfo* _networkInfo)
 void Network::ProcessEvent()
 {
 	int eventCnt;
+    long timeInterval;
+    
+    struct timespec waitTime;
 	while(true)
 	{
-        eventCnt = kevent(eventFd, NULL, 0, event, EVENT_BUFFER_SIZE, NULL);
-		if (eventCnt <= 0)
+        if(wait.tv_sec == 0 && wait.tv_nsec == 0)
+        {
+            eventCnt = kevent(eventFd, NULL, 0, event, EVENT_BUFFER_SIZE, NULL);
+        }
+        else
+        {
+            timeInterval = getCustomCurrentTime() - lastPingCheckTime;
+            if(timeInterval >= sendPingInterval)
+            {
+                pingCheck();
+                
+                waitTime.tv_sec = wait.tv_sec;
+                waitTime.tv_nsec = wait.tv_nsec;
+            }
+            else
+            {
+                long waitInterval = sendPingInterval - timeInterval;
+                waitTime.tv_sec = waitInterval / 1000;
+                waitTime.tv_nsec = (waitInterval % 1000) * 1000000;
+            }
+            
+            eventCnt = kevent(eventFd, NULL, 0, event, EVENT_BUFFER_SIZE, &waitTime);
+        }
+        
+		if (eventCnt < 0)
 		{
 			ErrorLog("kevent wait fail.");
 			continue;
 		}
+        else if(eventCnt == 0)
+        {
+            pingCheck();
+            continue;
+        }
 
 		for (int i = 0; i < eventCnt; i++)
         {
@@ -270,7 +325,8 @@ void Network::ProcessEvent()
                             break;
                         }
                         
-//                        receiveHandlerPointerList[connectInfo->serverModule]->IsConnected(connectInfo);
+                        sendDataToWorkerThread(RECEIVE_TYPE_CONNECT, connectInfo);
+                        connectInfo->flags |= FLAG_PROCESSING;
                         
                         break;
                     }
@@ -372,7 +428,8 @@ void Network::ProcessEvent()
                         }
                         else if (flags == DATA_TYPE_PING_OK)
                         {
-                            connectInfo->lastPingTime = getCustomCurrentTime();
+                            DebugLog("ping ok");
+                            connectInfo->sendPingCount = 0;
                             
                             if(pWholeRecvBufferSize == 0)
                             {
@@ -423,7 +480,7 @@ void Network::ProcessEvent()
                                 else
                                 {
                                     connectInfo->flags |= FLAG_PROCESSING;
-                                    sendDataToWorkerThread(connectInfo, pWholeRecvBuffer, (int)dataSize);
+                                    sendDataToWorkerThread(RECEIVE_TYPE_RECEIVE, connectInfo, pWholeRecvBuffer, (int)dataSize);
                                 }
                                 
                                 pWholeRecvBuffer += dataSize;
@@ -472,16 +529,20 @@ void Network::ProcessEvent()
                         ErrorLog("kevent init error");
                     }
                     
+                    connectInfo->flags |= FLAG_DISCONNECTED;
+                    
                     if((connectInfo->flags & FLAG_PROCESSING) != 0)
                     {
-                        connectInfo->flags |= FLAG_DISCONNECTED;
+
                     }
                     else
                     {
-                        if(DelClientPool(clntFd) == false)
-                        {
-                            ErrorLog("DelClient error %d", clntaddr);
-                        }
+                        sendDataToWorkerThread(RECEIVE_TYPE_DISCONNECT, connectInfo);
+                        
+//                        if(DelClientPool(clntFd) == false)
+//                        {
+//                            ErrorLog("DelClient error %d", clntaddr);
+//                        }
                     }
                 }
                 else
@@ -493,16 +554,20 @@ void Network::ProcessEvent()
                         ErrorLog("kevent init error");
                     }
                     
+                    connectInfo->flags |= FLAG_DISCONNECTED;
+                    
                     if((connectInfo->flags & FLAG_PROCESSING) != 0)
                     {
-                        connectInfo->flags |= FLAG_DISCONNECTED;
+                        
                     }
                     else
                     {
-                        if(DelClientPool(clntFd) == false)
-                        {
-                            ErrorLog("DelClient error %d", clntaddr);
-                        }
+                        sendDataToWorkerThread(RECEIVE_TYPE_DISCONNECT, connectInfo);
+                        
+                        //                        if(DelClientPool(clntFd) == false)
+                        //                        {
+                        //                            ErrorLog("DelClient error %d", clntaddr);
+                        //                        }
                     }
                 }
             }
@@ -516,17 +581,28 @@ void Network::ProcessEvent()
                 
                 ConnectInfo* connectInfo = (ConnectInfo*)event[i].udata;
                 
+                
                 if((connectInfo->flags & FLAG_DISCONNECTED) != 0)
                 {
-                    DelClientPool(connectInfo->fd);
-                    continue ;
+                    if((connectInfo->flags & FLAG_PROCESSING) != 0)
+                    {
+                        sendDataToWorkerThread(RECEIVE_TYPE_DISCONNECT, connectInfo);
+                        connectInfo->flags = 0;
+                        connectInfo->flags |= FLAG_DISCONNECTED;
+                        continue ;
+                    }
+                    else
+                    {
+                        DelClientPool(connectInfo->fd);
+                        continue ;
+                    }
                 }
                 
                 if(connectInfo->tempDataQueue.empty() == false)
                 {
                     TempBufferInfo* tbi = connectInfo->tempDataQueue.front();
                     connectInfo->tempDataQueue.pop_front();
-                    sendDataToWorkerThread(connectInfo, tbi->tempBuffer, tbi->tempBufferSize);
+                    sendDataToWorkerThread(RECEIVE_TYPE_RECEIVE, connectInfo, tbi->tempBuffer, tbi->tempBufferSize);
                     
                     delete tbi;
                 }
@@ -539,9 +615,10 @@ void Network::ProcessEvent()
     }
 }
 
-void Network::sendDataToWorkerThread(ConnectInfo* const _connectInfo, const char* _data, int _dataSize)
+void Network::sendDataToWorkerThread(int receiveType, ConnectInfo* const _connectInfo, const char* _data, int _dataSize)
 {
     DataPacket* dp = new DataPacket();
+    dp->receiveType = receiveType;
     dp->connectInfo = _connectInfo;
     dp->dataSize = _dataSize;
     dp->data = (char*)malloc(dp->dataSize);
@@ -573,15 +650,7 @@ void Network::sendDataToWorkerThread(ConnectInfo* const _connectInfo, const char
 
 void Network::sendData(const ConnectInfo* connectInfo, const char* data, int dataSize)
 {
-    DataHeader dataHeader;
-    dataHeader.dataType = DATA_TYPE_REQ;
-    dataHeader.dataSize = dataSize;
-    char sendDataArray[dataSize + sizeof(dataHeader)];
-    memcpy(sendDataArray, &dataHeader, sizeof(dataHeader));
-    memcpy(sendDataArray + sizeof(dataHeader), data, dataSize);
-    
-    
-    ssize_t sendCnt = send(connectInfo->fd, (void*)sendDataArray, sizeof(dataHeader) + dataSize, NULL);
+    ssize_t sendCnt = send(connectInfo->fd, (void*)data, dataSize, NULL);
     if(sendCnt < 0)
     {
         DebugLog("%d, %d", connectInfo->fd, connectInfo->flags);
@@ -590,15 +659,73 @@ void Network::sendData(const ConnectInfo* connectInfo, const char* data, int dat
 
 void Network::sendData(int threadId, const ConnectInfo* connectInfo, const char* data, int dataSize)
 {
-    sendData(connectInfo, data, dataSize);
+    DataHeader dataHeader;
+    dataHeader.dataType = DATA_TYPE_REQ;
+    dataHeader.dataSize = dataSize;
+    char sendDataArray[dataSize + sizeof(dataHeader)];
+    memcpy(sendDataArray, &dataHeader, sizeof(dataHeader));
+    memcpy(sendDataArray + sizeof(dataHeader), data, dataSize);
     
-    EV_SET(&connectEvent, threadId, EVFILT_USER, EV_ENABLE, NOTE_TRIGGER, 0, (void*)connectInfo);
+    sendData(connectInfo, sendDataArray, sizeof(dataHeader) + dataSize);
+    
+    finishProcessing(threadId, connectInfo);
+}
 
+void Network::finishProcessing(int threadId, const ConnectInfo* connectInfo)
+{
+    EV_SET(&connectEvent, threadId, EVFILT_USER, EV_ENABLE, NOTE_TRIGGER, 0, (void*)connectInfo);
+    
     if (kevent(eventFd, &connectEvent, 1, NULL, 0, NULL) == -1)
     {
         ErrorLog("kevent init error");
         return ;
     }
+}
+
+void Network::pingCheck()
+{
+    DebugLog("ping check");
+    long currentTime = getCustomCurrentTime();
+    
+    dataType_t dataTypeToSend = DATA_TYPE_PING_NOTIFY;
+    
+    for(int j = 0; j < listenSocketCount; j++)
+    {
+        for (int i = 0; i < MAX_CONNECT_SIZE; i++) {
+            if (connectInfoList[i].fd != 0 && connectInfoList[i].serverModule == serverConnectInfoList[j].serverModule && (connectInfoList[i].flags & FLAG_DISCONNECTED) == 0)
+            {
+                if(connectInfoList[i].sendPingCount >= disconnectPingCount)
+                {
+                    EV_SET(&connectEvent, connectInfoList[i].fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+                    
+                    if (kevent(eventFd, &connectEvent, 1, NULL, 0, NULL) == -1)
+                    {
+                        ErrorLog("kevent init error");
+                    }
+                    
+                    if((connectInfoList[i].flags & FLAG_PROCESSING) != 0)
+                    {
+                        connectInfoList[i].flags |= FLAG_DISCONNECTED;
+                    }
+                    else
+                    {
+                        if(DelClientPool(clntFd) == false)
+                        {
+                            ErrorLog("DelClient error %d", clntaddr);
+                        }
+                    }
+                }
+                else
+                {
+                    DebugLog("send ping notiy");
+                    sendData(&connectInfoList[i], (char*)&dataTypeToSend, sizeof(dataTypeToSend));
+                    
+                }
+            }
+        }
+    }
+    
+    lastPingCheckTime = currentTime;
 }
 
 
@@ -676,6 +803,9 @@ bool Network::DelClientPool(int fd)
 			connectInfoList[i].fd = 0;
             connectInfoList[i].flags = 0;
             connectInfoList[i].serverModule = -1;
+            connectInfoList[i].sendPingCount = 0;
+            connectInfoList[i].lastPingTime = 0;
+            connectInfoList[i].userData = NULL;
             //ToDo. memory delete queue
             connectInfoList[i].tempDataQueue.clear();
             if(connectInfoList[i].tempBufferInfo.tempBufferSize != 0)

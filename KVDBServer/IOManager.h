@@ -102,6 +102,8 @@ public:
     ~IOManager();
 
     ////////////virtual method///////////////
+    void connected(const ConnectInfo* connectInfo);
+    void disconnected(const ConnectInfo* connectInfo);
     void receiveData(const ConnectInfo* connectInfo, const char* data, int dataSize);
     
     

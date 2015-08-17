@@ -48,6 +48,9 @@
 		6FCF0E151B79AA6600D3A87B /* XmlData.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = XmlData.h; sourceTree = "<group>"; };
 		6FCF0E261B79AC8000D3A87B /* MasterServer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MasterServer.cpp; sourceTree = "<group>"; };
 		6FCF0E271B79AC8000D3A87B /* MasterServer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MasterServer.h; sourceTree = "<group>"; };
+		6FCF0E3C1B7C460D00D3A87B /* MasterSlavePacket.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MasterSlavePacket.h; sourceTree = "<group>"; };
+		6FCF0E3D1B7C4DDD00D3A87B /* CommonPacket.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CommonPacket.h; sourceTree = "<group>"; };
+		6FCF0E4E1B7F51B500D3A87B /* SlaveInfo.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SlaveInfo.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -97,6 +100,9 @@
 				6FCF0E141B79AA6600D3A87B /* XmlData.cpp */,
 				6FCF0E151B79AA6600D3A87B /* XmlData.h */,
 				6FCF0DEC1B79A87F00D3A87B /* main.cpp */,
+				6FCF0E3C1B7C460D00D3A87B /* MasterSlavePacket.h */,
+				6FCF0E3D1B7C4DDD00D3A87B /* CommonPacket.h */,
+				6FCF0E4E1B7F51B500D3A87B /* SlaveInfo.h */,
 			);
 			path = MasterServer;
 			sourceTree = "<group>";

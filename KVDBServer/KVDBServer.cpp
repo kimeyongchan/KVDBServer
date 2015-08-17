@@ -12,6 +12,8 @@
 #include "bufferCache.h"
 
 #include "Log.h"
+#include "LogInfo.h"
+#include <deque>
 
 #define PORT 3307
 
@@ -45,7 +47,7 @@ bool KVDBServer::Initialize(int workerThreadCount)
         networkInfoList[i].port = xmlData->serverInfoList[i].port;
     }
     
-    WorkerThread* workerThreadArray = new IOManager[workerThreadCount];
+    IOManager* workerThreadArray = new IOManager[workerThreadCount];
     
     for(int i = 0; i < workerThreadCount; i++)
     {
@@ -57,20 +59,22 @@ bool KVDBServer::Initialize(int workerThreadCount)
     }
     
     network = new Network();
-    if (network->Initialize(networkInfoList, networkInfoCount, workerThreadCount, workerThreadArray) == false)
+    if (network->Initialize(networkInfoList, networkInfoCount, workerThreadCount, workerThreadArray, 0, 0) == false)
     {
         ErrorLog("Network error");
         return false;
     }
     
-    logBuffer = new LogBuffer();
-    if (logBuffer->initialize() == false)
+    logFile = new LogFile();
+    if (logFile->initialize(KVDB_LOG_NAME) == false)
     {
         return false;
     }
+
     
-    logFile = new LogFile();
-    if (logFile->initialize(KVDB_LOG_NAME) == false)
+    
+    logBuffer = new LogBuffer();
+    if (logBuffer->initialize(logFile->getCln() + 1) == false)
     {
         return false;
     }
@@ -84,9 +88,50 @@ bool KVDBServer::Initialize(int workerThreadCount)
         return false;
     }
     
-    bc = new BufferCache(superBlock);
-    nc = new NamedCache(superBlock);
-
+    if(superBlock->getCln() < logFile->getCln()) // recovery
+    {
+        std::deque<LogInfo*> dequeue;
+        
+        if(logFile->recoveryLogFile(superBlock->getCln(), &dequeue) == false)
+        {
+            ErrorLog("not recovery");
+            return false;
+        }
+        
+        while(1)
+        {
+            if(dequeue.empty())
+            {
+                break;
+            }
+            else
+            {
+                if(diskManager->recovery(dequeue.front()) == false)
+                {
+                    ErrorLog("disk recovery error");
+                    return false;
+                }
+                dequeue.pop_front();
+            }
+        }
+        
+        //diskManager->setCln(logFilecln);
+    }
+    else if(superBlock->getCln() == logFile->getCln()) // not recovery
+    {
+        
+    }
+    else //error
+    {
+        ErrorLog("disk cln - %d, logfile cln - %d", superBlock->getCln(), logFile->getCln());
+        return false;
+    }
+    
+    // cache에 슈퍼블럭 주기
+    
+    bufferCache = new BufferCache(superBlock);
+    namedCache = new NamedCache(superBlock);
+    
 	return true;
 }
 

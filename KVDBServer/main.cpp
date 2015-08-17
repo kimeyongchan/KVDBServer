@@ -6,7 +6,7 @@
 #include <string.h>
 int main(int argc, const char * argv[]) {
     
-    if(KVDBServer::getInstance()->Initialize(4) == false)
+    if(KVDBServer::getInstance()->Initialize(1) == false)
     {
         ErrorLog("init error");
         return -1;
