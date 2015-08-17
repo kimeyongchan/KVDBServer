@@ -97,7 +97,7 @@ void BufferCache::deleteDirty(uint64_t ba)
 void BufferCache::setBitArrayFlag(uint64_t ba)
 {
     uint64_t idx = (ba / BLOCK_SIZE )- 1;
-    char* bitArray = this->spB->getUsingBlockBitArray();
-    bitArray[idx]? bitArray[idx] =1 : bitArray[idx] = 0;
+    char* bitArr = this->spB->getUsingBlockBitArray();
+    bitArr[idx]? bitArr[idx] = 0 : bitArr[idx] = 1;
     
 }
