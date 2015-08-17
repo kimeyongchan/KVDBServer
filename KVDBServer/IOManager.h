@@ -56,9 +56,10 @@ public:
     uint64_t    blockAddress;
     uint16_t    indirectionNum;
     uint64_t    prevBlockAddress;
+    bool        isLoging;
     
     DirtyBlockInfo(Block* dirtyBlock, bool isAlloc, bool isFree, bool insertState,
-                   uint64_t blockAdr, uint16_t indNum, uint64_t prevBlockAdr = 0)
+                   uint64_t blockAdr, uint16_t indNum, uint64_t prevBlockAdr = 0, bool logingState = true)
     {
         block               = dirtyBlock;
         isAllocateBlock     = isAlloc;
@@ -67,6 +68,7 @@ public:
         blockAddress        = blockAdr;
         indirectionNum      = indNum;
         prevBlockAddress    = prevBlockAdr;
+        isLoging  = logingState;  // 블럭에 체이닝 주소만 바뀌었을때 : 로깅 안해도됨, 디스크에는 써야 함
         
     }
     
