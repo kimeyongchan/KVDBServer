@@ -10,15 +10,18 @@ Block* BufferCache::findBlock(uint64_t ba)
 	{
 		if(it->first == ba)
         {
-            for(list<uint64_t>::iterator it = bufferQueue.begin(); it != bufferQueue.end(); ++it)
+            list<uint64_t>::iterator itList;
+            for(itList= bufferQueue.begin(); itList != bufferQueue.end(); ++itList)
             {
-                    if((*it) == ba)
+                    if((*itList) == ba)
                     {
-                        this->bufferQueue.remove((*it));
-                        this->bufferQueue.push_back((*it));
+                        break;
                     }
                 
             }
+            
+            this->bufferQueue.remove((*itList));
+            this->bufferQueue.push_back((*itList));
             
             return it->second;
         }

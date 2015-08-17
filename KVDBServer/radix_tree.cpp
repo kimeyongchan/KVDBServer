@@ -82,14 +82,13 @@ bool RadixTree::insertData(string key, uint64_t ba)
             NamedData* nd ;
             void * rt;
             try{
-            
-            
                 nd = new NamedData(key,ba);
                 rt = nd->getRadixTree();
                 
                 if(rt == NULL)
                     rt = new RadixTree;
                 cout << "rt" <<rt << endl;
+                
             }catch(bad_alloc& e)
             {
                 cout<<e.what()<<endl;
