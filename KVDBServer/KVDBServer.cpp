@@ -8,6 +8,8 @@
 #include "LogBuffer.h"
 #include "LogFile.h"
 #include "SuperBlock.h"
+#include "NamedCache.h"
+#include "bufferCache.h"
 
 #include "Log.h"
 
@@ -81,6 +83,9 @@ bool KVDBServer::Initialize(int workerThreadCount)
         ErrorLog("diskManager error");
         return false;
     }
+    
+    bc = new BufferCache(superBlock);
+    nc = new NamedCache(superBlock);
 
 	return true;
 }
