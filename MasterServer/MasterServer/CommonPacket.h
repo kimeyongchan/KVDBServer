@@ -9,9 +9,12 @@
 #ifndef MasterServer_CommonPacket_h
 #define MasterServer_CommonPacket_h
 
+//#pragma pack(push, 1)
 class CommonPacket
 {
-    const static int MAX_IP_LEN = 15;
+public:
+    static const int MAX_IP_ADDRESS_LEN = 15;
 };
+//#pragma pack(pop)
 
 #endif

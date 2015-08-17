@@ -18,8 +18,8 @@ public:
     void PushDataPacket(DataPacket* dataPacket);
     DataPacket* PopDataPacket();
     
-    virtual void enterConnect(const ConnectInfo* connectInfo) = 0;
-    virtual void leaveConnect(const ConnectInfo* connectInfo) = 0;
+    virtual void connected(const ConnectInfo* connectInfo) = 0;
+    virtual void disconnected(const ConnectInfo* connectInfo) = 0;
     virtual void receiveData(const ConnectInfo* connectInfo, const char* data, int dataSize) = 0;
     
     pthread_t* GetTid() { return &tid; }

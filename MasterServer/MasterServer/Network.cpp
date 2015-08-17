@@ -235,7 +235,8 @@ bool Network::AddClientTypeNetworkInfo(const NetworkInfo* _networkInfo)
         return false;
     }
     
-    sendDataToWorkerThread(connectInfo, NULL, 0);
+    sendDataToWorkerThread(RECEIVE_TYPE_CONNECT, connectInfo);
+    connectInfo->flags |= FLAG_PROCESSING;
     
     
     return true;
@@ -317,7 +318,8 @@ void Network::ProcessEvent()
                             break;
                         }
                         
-//                        receiveHandlerPointerList[connectInfo->serverModule]->IsConnected(connectInfo);
+                        sendDataToWorkerThread(RECEIVE_TYPE_CONNECT, connectInfo);
+                        connectInfo->flags |= FLAG_PROCESSING;
                         
                         break;
                     }
@@ -471,7 +473,7 @@ void Network::ProcessEvent()
                                 else
                                 {
                                     connectInfo->flags |= FLAG_PROCESSING;
-                                    sendDataToWorkerThread(connectInfo, pWholeRecvBuffer, (int)dataSize);
+                                    sendDataToWorkerThread(RECEIVE_TYPE_RECEIVE, connectInfo, pWholeRecvBuffer, (int)dataSize);
                                 }
                                 
                                 pWholeRecvBuffer += dataSize;
@@ -526,10 +528,12 @@ void Network::ProcessEvent()
                     }
                     else
                     {
-                        if(DelClientPool(clntFd) == false)
-                        {
-                            ErrorLog("DelClient error %d", clntaddr);
-                        }
+                        sendDataToWorkerThread(RECEIVE_TYPE_DISCONNECT, connectInfo);
+                        
+//                        if(DelClientPool(clntFd) == false)
+//                        {
+//                            ErrorLog("DelClient error %d", clntaddr);
+//                        }
                     }
                 }
                 else
@@ -547,10 +551,12 @@ void Network::ProcessEvent()
                     }
                     else
                     {
-                        if(DelClientPool(clntFd) == false)
-                        {
-                            ErrorLog("DelClient error %d", clntaddr);
-                        }
+                        sendDataToWorkerThread(RECEIVE_TYPE_DISCONNECT, connectInfo);
+                        
+                        //                        if(DelClientPool(clntFd) == false)
+                        //                        {
+                        //                            ErrorLog("DelClient error %d", clntaddr);
+                        //                        }
                     }
                 }
             }
@@ -564,17 +570,28 @@ void Network::ProcessEvent()
                 
                 ConnectInfo* connectInfo = (ConnectInfo*)event[i].udata;
                 
+                
                 if((connectInfo->flags & FLAG_DISCONNECTED) != 0)
                 {
-                    DelClientPool(connectInfo->fd);
-                    continue ;
+                    if((connectInfo->flags & FLAG_PROCESSING) != 0)
+                    {
+                        sendDataToWorkerThread(RECEIVE_TYPE_DISCONNECT, connectInfo);
+                        connectInfo->flags = 0;
+                        connectInfo->flags |= FLAG_DISCONNECTED;
+                        continue ;
+                    }
+                    else
+                    {
+                        DelClientPool(connectInfo->fd);
+                        continue ;
+                    }
                 }
                 
                 if(connectInfo->tempDataQueue.empty() == false)
                 {
                     TempBufferInfo* tbi = connectInfo->tempDataQueue.front();
                     connectInfo->tempDataQueue.pop_front();
-                    sendDataToWorkerThread(connectInfo, tbi->tempBuffer, tbi->tempBufferSize);
+                    sendDataToWorkerThread(RECEIVE_TYPE_RECEIVE, connectInfo, tbi->tempBuffer, tbi->tempBufferSize);
                     
                     delete tbi;
                 }
@@ -590,6 +607,7 @@ void Network::ProcessEvent()
 void Network::sendDataToWorkerThread(int receiveType, ConnectInfo* const _connectInfo, const char* _data, int _dataSize)
 {
     DataPacket* dp = new DataPacket();
+    dp->receiveType = receiveType;
     dp->connectInfo = _connectInfo;
     dp->dataSize = _dataSize;
     dp->data = (char*)malloc(dp->dataSize);

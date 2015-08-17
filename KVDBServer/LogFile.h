@@ -12,6 +12,9 @@
 #define MAX_LOG_FILE_SIZE   1024 * 1024 * 500
 
 #include <stdInt.h>
+#include <deque>
+
+class LogInfo;
 
 class LogFile
 {
@@ -21,7 +24,7 @@ public:
     bool initialize(const char* fileName);
     
     bool writeLogFile(int logSize, const char* logArrary);
-    long recoveryLogFile(int diskCln, char** logArray);
+    bool recoveryLogFile(int diskCln, std::deque<LogInfo*>* dequeue);
     void clear();
     
     int getCln() { return cln; }

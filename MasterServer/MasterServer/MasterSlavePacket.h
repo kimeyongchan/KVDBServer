@@ -11,8 +11,11 @@
 
 #include "CommonPacket.h"
 
+#pragma pack(push, 1)
 class MasterSlavePacket
 {
+public:
+    
     struct OpenClientPortReqPacket
     {
         uint16_t port;
@@ -20,9 +23,9 @@ class MasterSlavePacket
     
     struct OpenClientPortResPacket
     {
-        char ip
+        char ip[CommonPacket::MAX_IP_ADDRESS_LEN];
     };
 };
-
+#pragma pack(pop)
 
 #endif

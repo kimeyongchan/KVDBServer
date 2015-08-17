@@ -4,6 +4,7 @@
 #include "MasterServer.h"
 #include "Defines.h"
 #include "Network.h"
+#include "MasterSlavePacket.h"
 
 IOManager::IOManager()
 {
@@ -14,13 +15,13 @@ IOManager::~IOManager()
 {
 }
 
-void enterConnect(const ConnectInfo* connectInfo)
+void IOManager::connected(const ConnectInfo* connectInfo)
 {
     
 }
 
 
-void leaveConnect(const ConnectInfo* connectInfo)
+void IOManager::disconnected(const ConnectInfo* connectInfo)
 {
     
 }

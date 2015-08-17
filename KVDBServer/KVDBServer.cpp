@@ -8,8 +8,9 @@
 #include "LogBuffer.h"
 #include "LogFile.h"
 #include "SuperBlock.h"
-
 #include "Log.h"
+#include "LogInfo.h"
+#include <deque>
 
 #define PORT 3307
 
@@ -88,15 +89,41 @@ bool KVDBServer::Initialize(int workerThreadCount)
 
     if(superBlock->getCln() < logFile->getCln()) // recovery
     {
-//        logFile->getLogInfoByCln(superBlock->getCln());
+        std::deque<LogInfo*> dequeue;
+        
+        if(logFile->recoveryLogFile(superBlock->getCln(), &dequeue) == false)
+        {
+            ErrorLog("not recovery");
+            return false;
+        }
+        
+        while(1)
+        {
+            if(dequeue.empty())
+            {
+                break;
+            }
+            else
+            {
+                if(diskManager->recovery(dequeue.front()) == false)
+                {
+                    ErrorLog("disk recovery error");
+                    return false;
+                }
+                dequeue.pop_front();
+            }
+        }
+        
+        //diskManager->setCln(logFilecln);
     }
-    else if( superBlock->getCln() == logFile->getCln()) // not recovery
+    else if(superBlock->getCln() == logFile->getCln()) // not recovery
     {
         
     }
     else //error
     {
         ErrorLog("disk cln - %d, logfile cln - %d", superBlock->getCln(), logFile->getCln());
+        return false;
     }
     
     

@@ -13,7 +13,8 @@
 
 #include "Data.h"
 
-#define IS_ALLOCATED_NEW_BLOCK  0b10000000
+#define IS_ALLOCATED_BLOCK      0b10000000
+#define IS_FREE_BLOCK           0b01000000
 #define IS_INSERT               0b00000001
 
 #define MAX_LOG_BUFFER_SIZE     1024 * 1024 * 500
@@ -24,7 +25,7 @@ public:
     LogBuffer();
     ~LogBuffer();
     bool initialize(int _cln);
-    bool saveLog(bool isAllocateBlock, bool isInsert, int64_t IndBlockAddress, uint16_t offset, const Data* data); // not allocate data
+    bool saveLog(bool isAllocateBlock, bool isFreeBlock, bool isInsert, int64_t blockAddress, uint16_t offsetLocation, uint16_t offset, const Data* data, int64_t prevBlockAddress = NULL); // not allocate data
     int commitLogBuffer(char** pLogBuffer);
     //void clear();
     

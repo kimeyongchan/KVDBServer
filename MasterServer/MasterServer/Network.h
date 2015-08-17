@@ -50,6 +50,7 @@ struct ConnectInfo
 
 struct DataPacket
 {
+    int receiveType;
     ConnectInfo* connectInfo;
     char* data;
     int dataSize;
@@ -67,6 +68,13 @@ enum DATA_TYPE
     DATA_TYPE_PING_NOTIFY = 0,
     DATA_TYPE_PING_OK,
     DATA_TYPE_REQ,
+};
+
+enum RECEIVE_TYPE
+{
+    RECEIVE_TYPE_RECEIVE = 0,
+    RECEIVE_TYPE_CONNECT,
+    RECEIVE_TYPE_DISCONNECT,
 };
 
 struct NetworkInfo
