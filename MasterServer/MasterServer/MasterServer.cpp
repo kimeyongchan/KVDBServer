@@ -51,7 +51,7 @@ bool MasterServer::Initialize(int workerThreadCount)
     }
     
     network = new Network();
-    if (network->Initialize(networkInfoList, networkInfoCount, workerThreadCount, workerThreadArray) == false)
+    if (network->Initialize(networkInfoList, networkInfoCount, workerThreadCount, workerThreadArray, 5000, 3) == false)
     {
         ErrorLog("Network error");
         return false;
@@ -65,6 +65,7 @@ void MasterServer::Run()
 	while (true)
 	{
 		network->ProcessEvent();
+        
 	}
 }
 

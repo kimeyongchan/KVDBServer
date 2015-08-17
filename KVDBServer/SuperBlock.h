@@ -11,6 +11,7 @@ class SuperBlock
 private:
     uint16_t blockSize;
     uint64_t blockCount;
+    uint32_t cln;
     char* usingBlockBitArray;
     int64_t rootBlockAddress;
     Block* rootBlock;
@@ -22,6 +23,16 @@ public:
     ~SuperBlock()
     {
         delete usingBlockBitArray;
+    }
+    
+    uint32_t getCln()
+    {
+        return cln;
+    }
+    
+    void setCln(uint32_t _cln)
+    {
+        cln = _cln;
     }
     
     uint16_t getBlockSize()

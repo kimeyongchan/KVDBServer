@@ -4,6 +4,7 @@
 #include "MasterServer.h"
 #include "Defines.h"
 #include "Network.h"
+#include "MasterSlavePacket.h"
 
 IOManager::IOManager()
 {
@@ -12,6 +13,21 @@ IOManager::IOManager()
 
 IOManager::~IOManager()
 {
+}
+
+void IOManager::connected(const ConnectInfo* connectInfo)
+{
+    DebugLog("connected");
+    
+    MasterServer::getInstance()->network->finishProcessing(tfd, connectInfo);
+}
+
+
+void IOManager::disconnected(const ConnectInfo* connectInfo)
+{
+    DebugLog("disconnected");
+    
+    MasterServer::getInstance()->network->finishProcessing(tfd, connectInfo);
 }
 
 

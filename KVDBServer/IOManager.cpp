@@ -24,6 +24,21 @@ IOManager::~IOManager()
 {
 }
 
+void IOManager::connected(const ConnectInfo* connectInfo)
+{
+    DebugLog("connected");
+    
+    KVDBServer::getInstance()->network->finishProcessing(tfd, connectInfo);
+}
+
+
+void IOManager::disconnected(const ConnectInfo* connectInfo)
+{
+    DebugLog("disconnected");
+    
+    KVDBServer::getInstance()->network->finishProcessing(tfd, connectInfo);
+}
+
 
 void IOManager::receiveData(const ConnectInfo* connectInfo, const char* data, int dataSize)
 {    
@@ -88,6 +103,7 @@ void IOManager::receiveClientData(const ConnectInfo* connectInfo, const char* da
         }
     }
     
+    DebugLog("fefe");
     KVDBServer::getInstance()->network->sendData(tfd, connectInfo, "fefe", 4);
 }
 
