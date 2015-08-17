@@ -39,15 +39,11 @@ bool MasterServer::Initialize(int workerThreadCount)
         networkInfoList[i].port = xmlData->serverInfoList[i].port;
     }
     
-    WorkerThread* workerThreadArray = new IOManager[workerThreadCount];
+    WorkerThread** workerThreadArray = new WorkerThread*[workerThreadCount];
     
     for(int i = 0; i < workerThreadCount; i++)
     {
-        if(workerThreadArray[i].Initialize() == false)
-        {
-            ErrorLog("workerThread error");
-            return false;
-        }
+        workerThreadArray[i] = new IOManager();
     }
     
     network = new Network();

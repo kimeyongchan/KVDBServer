@@ -91,7 +91,7 @@ class Network
 public:
 	Network();
 	~Network();
-	bool Initialize(const NetworkInfo* _networkInfoList, int _networkInfoCount, int _workThreadCount, WorkerThread* _workerThreadArray, long _sendPingInterval, int _disconnectPingCount);
+	bool Initialize(const NetworkInfo* _networkInfoList, int _networkInfoCount, int _workThreadCount, WorkerThread** _workerThreadArray, long _sendPingInterval, int _disconnectPingCount);
     bool AddNetworkInfo(const NetworkInfo* _networkInfo);
 	void ProcessEvent();
     void sendData(const ConnectInfo* connectInfo, const char* data, int dataSize);
@@ -127,7 +127,7 @@ private:
     char tempRecvBuffer[RECV_BUF];
     
     int workerThreadCount;
-    WorkerThread* workerThreadArray;
+    WorkerThread** workerThreadArray;
 
     struct timespec wait;
     

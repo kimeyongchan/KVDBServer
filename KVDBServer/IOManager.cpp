@@ -103,7 +103,6 @@ void IOManager::receiveClientData(const ConnectInfo* connectInfo, const char* da
         }
     }
     
-    DebugLog("fefe");
     KVDBServer::getInstance()->network->sendData(tfd, connectInfo, "fefe", 4);
 }
 

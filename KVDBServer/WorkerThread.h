@@ -7,6 +7,7 @@
 class ConnectInfo;
 class DataPacket;
 
+
 class WorkerThread
 {
 public:
