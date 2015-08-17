@@ -521,7 +521,7 @@ bool DiskManager::readDisk(uint64_t address, void* buffer, int readSize)
     return true;
 }
 
-bool DiskManager::recovery(int logFileCln, int diskCln, const char* log, int logSize)
+bool DiskManager::recovery(const LogInfo* logInfo)
 {
     
     return true;

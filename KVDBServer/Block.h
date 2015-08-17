@@ -108,6 +108,7 @@ public:
     
     bool insertData(uint16_t idx, uint16_t offset, Data* data);
     bool deleteData(uint16_t idx);
+    bool deleteData(std::string dataKey);
     Data* getData(uint16_t idx);
     Data* getData(std::string dataKey);
     
@@ -149,6 +150,8 @@ public:
     
     uint16_t getIndNumByOffset(uint16_t offset);
     uint16_t getIndNumByKey(std::string componentKey);
+    uint16_t getOffsetByIndNum(uint16_t indNum);
+    uint16_t getOffsetByKey(std::string componentKey);
     void getLargestDatasDistanceSize(uint16_t& largestDatasDistance, uint16_t& newOffset);
     
     

@@ -103,7 +103,7 @@ public:
     NamedData* findComponent(string component, NamedData* parent);
 	void deleteData(string component, NamedData* parent);
 	bool initFunction(const SuperBlock* spBlock);
-	
+    NamedData* getRootAddr() { return this->root;}
 };
 
 #endif

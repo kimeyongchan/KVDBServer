@@ -90,6 +90,15 @@ bool Block::deleteData(uint16_t idx)
     return true;
 }
 
+bool Block::deleteData(std::string dataKey)
+{
+    for(auto iter = indirectionDataMap.begin(); iter != indirectionDataMap.end(); ++iter )
+        if(dataKey.compare(iter->second->data->getKey()) ==0)
+            return deleteData(iter->first);
+    
+    return false;
+}
+
 Data* Block::getData(uint16_t idx)
 {
     auto iter = indirectionDataMap.find(idx);
@@ -177,6 +186,29 @@ uint16_t Block::getIndNumByKey(std::string componentKey)
         std::string key = iter->second->data->getKey();
         if(key.compare(componentKey) == 0)
             return iter->first;
+    }
+    
+    return 0;
+}
+
+uint16_t Block::getOffsetByIndNum(uint16_t indNum)
+{
+    for(auto iter = indirectionDataMap.begin(); iter != indirectionDataMap.end(); ++iter)
+    {
+        if(iter->first == indNum)
+            return iter->second->offset;
+    }
+    
+    return 0;
+}
+
+uint16_t Block::getOffsetByKey(std::string componentKey)
+{
+    for(auto iter = indirectionDataMap.begin(); iter != indirectionDataMap.end(); ++iter)
+    {
+        std::string key = iter->second->data->getKey();
+        if(key.compare(componentKey) == 0)
+            return iter->second->offset;
     }
     
     return 0;

@@ -96,6 +96,7 @@ public:
 	void ProcessEvent();
     void sendData(const ConnectInfo* connectInfo, const char* data, int dataSize);
     void sendData(int threadId, const ConnectInfo* connectInfo, const char* data, int dataSize);
+    void finishProcessing(int threadId, const ConnectInfo* connectInfo);
 
 private:
 	int CreateTCPServerSocket(const char* ip, unsigned short port);

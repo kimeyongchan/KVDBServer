@@ -10,6 +10,8 @@ class Log;
 class LogBuffer;
 class LogFile;
 class SuperBlock;
+class BufferCache;
+class NamedCache;
 
 class KVDBServer
 {
@@ -36,6 +38,8 @@ public:
     LogBuffer* logBuffer;
     LogFile* logFile;
     SuperBlock* superBlock;
+    NamedCache* namedCache;
+    BufferCache* bufferCache;
 };
 
 #endif //__K_V_D_B_SERVER_H__

@@ -522,9 +522,11 @@ void Network::ProcessEvent()
                         ErrorLog("kevent init error");
                     }
                     
+                    connectInfo->flags |= FLAG_DISCONNECTED;
+                    
                     if((connectInfo->flags & FLAG_PROCESSING) != 0)
                     {
-                        connectInfo->flags |= FLAG_DISCONNECTED;
+
                     }
                     else
                     {
@@ -545,9 +547,11 @@ void Network::ProcessEvent()
                         ErrorLog("kevent init error");
                     }
                     
+                    connectInfo->flags |= FLAG_DISCONNECTED;
+                    
                     if((connectInfo->flags & FLAG_PROCESSING) != 0)
                     {
-                        connectInfo->flags |= FLAG_DISCONNECTED;
+                        
                     }
                     else
                     {
@@ -657,15 +661,19 @@ void Network::sendData(int threadId, const ConnectInfo* connectInfo, const char*
     
     sendData(connectInfo, sendDataArray, sizeof(dataHeader) + dataSize);
     
-    EV_SET(&connectEvent, threadId, EVFILT_USER, EV_ENABLE, NOTE_TRIGGER, 0, (void*)connectInfo);
+    finishProcessing(threadId, connectInfo);
+}
 
+void Network::finishProcessing(int threadId, const ConnectInfo* connectInfo)
+{
+    EV_SET(&connectEvent, threadId, EVFILT_USER, EV_ENABLE, NOTE_TRIGGER, 0, (void*)connectInfo);
+    
     if (kevent(eventFd, &connectEvent, 1, NULL, 0, NULL) == -1)
     {
         ErrorLog("kevent init error");
         return ;
     }
 }
-
 
 void Network::pingCheck()
 {

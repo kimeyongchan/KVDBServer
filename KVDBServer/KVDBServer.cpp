@@ -8,6 +8,9 @@
 #include "LogBuffer.h"
 #include "LogFile.h"
 #include "SuperBlock.h"
+#include "NamedCache.h"
+#include "bufferCache.h"
+
 #include "Log.h"
 #include "LogInfo.h"
 #include <deque>
@@ -44,7 +47,7 @@ bool KVDBServer::Initialize(int workerThreadCount)
         networkInfoList[i].port = xmlData->serverInfoList[i].port;
     }
     
-    WorkerThread* workerThreadArray = new IOManager[workerThreadCount];
+    IOManager* workerThreadArray = new IOManager[workerThreadCount];
     
     for(int i = 0; i < workerThreadCount; i++)
     {
@@ -56,7 +59,7 @@ bool KVDBServer::Initialize(int workerThreadCount)
     }
     
     network = new Network();
-    if (network->Initialize(networkInfoList, networkInfoCount, workerThreadCount, workerThreadArray, 1000, 3) == false)
+    if (network->Initialize(networkInfoList, networkInfoCount, workerThreadCount, workerThreadArray, 0, 0) == false)
     {
         ErrorLog("Network error");
         return false;
@@ -85,8 +88,6 @@ bool KVDBServer::Initialize(int workerThreadCount)
         return false;
     }
     
-    // cache에 슈퍼블럭 주기
-
     if(superBlock->getCln() < logFile->getCln()) // recovery
     {
         std::deque<LogInfo*> dequeue;
@@ -126,6 +127,10 @@ bool KVDBServer::Initialize(int workerThreadCount)
         return false;
     }
     
+    // cache에 슈퍼블럭 주기
+    
+    bufferCache = new BufferCache(superBlock);
+    namedCache = new NamedCache(superBlock);
     
 	return true;
 }

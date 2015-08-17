@@ -17,13 +17,17 @@ IOManager::~IOManager()
 
 void IOManager::connected(const ConnectInfo* connectInfo)
 {
+    DebugLog("connected");
     
+    MasterServer::getInstance()->network->finishProcessing(tfd, connectInfo);
 }
 
 
 void IOManager::disconnected(const ConnectInfo* connectInfo)
 {
+    DebugLog("disconnected");
     
+    MasterServer::getInstance()->network->finishProcessing(tfd, connectInfo);
 }
 
 

@@ -76,7 +76,7 @@ uint64_t BufferCache::newBlock()
 	{
 		if (bitArr[i] == 0)
 		{
-            uint64_t ba =i*spB->getBlockSize();
+            uint64_t ba =i*spB->getBlockSize();  // index * block size -> addr?
             this->bufferQueue.push_back(ba);
             return ba;
 		}

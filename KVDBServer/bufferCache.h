@@ -16,6 +16,7 @@ public:
     BufferCache(SuperBlock* spBlock)
     {
         this->spB = spBlock;
+        insertBlock2Cache(this->spB->getRootBlockAddress(), this->spB->getRootBlock());
         
     }
 	
@@ -26,8 +27,5 @@ public:
 	bool getDeleteBlock(uint64_t& rtba, Block& rtblk);
 	void deleteDirty(uint64_t ba);
     
-    void initialize(SuperBlock* spBlock)
-    {
-        this->spB = spBlock;
-    }
+  
 };

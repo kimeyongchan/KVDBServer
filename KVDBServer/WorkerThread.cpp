@@ -33,7 +33,22 @@ void WorkerThread::Run()
 		DataPacket* dp = PopDataPacket();
 		if (dp != NULL)
 		{
-            receiveData(dp->connectInfo, dp->data, dp->dataSize);
+            if(dp->receiveType == RECEIVE_TYPE_RECEIVE)
+            {
+                receiveData(dp->connectInfo, dp->data, dp->dataSize);
+            }
+            else if(dp->receiveType == RECEIVE_TYPE_CONNECT)
+            {
+                connected(dp->connectInfo);
+            }
+            else if(dp->receiveType == RECEIVE_TYPE_DISCONNECT)
+            {
+                disconnected(dp->connectInfo);
+            }
+            else
+            {
+                ErrorLog("invalid receive type - %d", dp->receiveType);
+            }
             free(dp->data);
             delete dp;
 		}

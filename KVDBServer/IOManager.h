@@ -12,6 +12,7 @@ class FindRequestInfo;
 class DeleteRequestInfo;
 class Block;
 class Data;
+class NamedData;
 
 
 class NamedCacheData
@@ -45,6 +46,36 @@ public:
     }
 };
 
+class DirtyBlockInfo
+{
+public:
+    Block*      block;
+    bool        isAllocateBlock;
+    bool        isFreeBlock;
+    bool        isInsert;
+    uint64_t    blockAddress;
+    uint16_t    indirectionNum;
+    uint64_t    prevBlockAddress;
+    bool        isLoging;
+    
+    DirtyBlockInfo(Block* dirtyBlock, bool isAlloc, bool isFree, bool insertState,
+                   uint64_t blockAdr, uint16_t indNum, uint64_t prevBlockAdr = 0, bool logingState = true)
+    {
+        block               = dirtyBlock;
+        isAllocateBlock     = isAlloc;
+        isFreeBlock         = isFree;
+        isInsert            = insertState;
+        blockAddress        = blockAdr;
+        indirectionNum      = indNum;
+        prevBlockAddress    = prevBlockAdr;
+        isLoging  = logingState;  // 블럭에 체이닝 주소만 바뀌었을때 : 로깅 안해도됨, 디스크에는 써야 함
+        
+    }
+    
+    //isallocate = 0 , isFreeBlock = 1, isInsert = 0, blockAddress = 1번 블럭주소, uint16_t offsetLocation = 삭제할 데이터의 오프셋로케이션, uint16_t offset = 삭제할 데이터의 오프셋, const Data* data = 삭제할 데이터, int64_t prevBlockAddress = 0
+
+};
+
 class IoMgrReturnValue
 {
 public:
@@ -68,6 +99,8 @@ public:
     ~IOManager();
 
     ////////////virtual method///////////////
+    void connected(const ConnectInfo* connectInfo);
+    void disconnected(const ConnectInfo* connectInfo);
     void receiveData(const ConnectInfo* connectInfo, const char* data, int dataSize);
     
     
@@ -76,8 +109,6 @@ public:
     void receiveMasterData(const ConnectInfo* connectInfo, const char* data, int dataSize);
     bool parsingQuery(const char* query, int queryLen, RequestInfo** pri);
 
-    
-    
 public:
     int8_t processInsert(InsertRequestInfo* reqInfo);
     int8_t processInsert(InsertDirectoryRequestInfo* reqInfo);
@@ -89,14 +120,27 @@ private:
     std::vector<std::string>    componentList;
     std::vector<NamedCacheData> namedCacheDataList;
     std::map<uint64_t, Block*>  insertBufferCacheDataMap; //<블럭주소, 블럭>
+    std::vector<uint64_t>       lastBlockChainingAdrList;
+    
     
     std::vector<std::string> split(const std::string &s, char delim);
     
     IoMgrReturnValue checkBufferCacheAndDisk(uint64_t indirectionBa, int curIdx, int lastIdx);
+    IoMgrReturnValue findBufferCacheAndDisk(uint64_t indirectionBa, int curIdx, int lastIdx);
     
     uint16_t ibaToOffsetIdx(uint64_t iba, uint64_t ba);
     uint64_t ibaToBa(uint64_t iba);
     bool compaction(Block* block);
+    bool caching(NamedData* firstParentData);
+    
+    
+private:
+    
+    void TEST_INSERT();
+    void TEST_INSERT_DIR();
+    void TEST_FIND();
+    void TEST_DELETE();
+    
     
 };
 
