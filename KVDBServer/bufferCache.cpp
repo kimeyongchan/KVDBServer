@@ -10,15 +10,18 @@ Block* BufferCache::findBlock(uint64_t ba)
 	{
 		if(it->first == ba)
         {
-            for(list<uint64_t>::iterator it = bufferQueue.begin(); it != bufferQueue.end(); ++it)
+            list<uint64_t>::iterator itList;
+            for(itList= bufferQueue.begin(); itList != bufferQueue.end(); ++itList)
             {
-                    if((*it) == ba)
+                    if((*itList) == ba)
                     {
-                        this->bufferQueue.remove((*it));
-                        this->bufferQueue.push_back((*it));
+                        break;
                     }
                 
             }
+            
+            this->bufferQueue.remove((*itList));
+            this->bufferQueue.push_back((*itList));
             
             return it->second;
         }
@@ -76,7 +79,7 @@ uint64_t BufferCache::newBlock()
 	{
 		if (bitArr[i] == 0)
 		{
-            uint64_t ba =i*spB->getBlockSize();  // index * block size -> addr?
+            uint64_t ba =(i+1)*spB->getBlockSize();  // index * block size -> addr?
             this->bufferQueue.push_back(ba);
             return ba;
 		}
@@ -92,4 +95,12 @@ void BufferCache::deleteDirty(uint64_t ba)
 	//cache remove
 	this->bc.erase(ba);
 
+}
+
+void BufferCache::setBitArrayFlag(uint64_t ba)
+{
+    uint64_t idx = (ba / BLOCK_SIZE )- 1;
+    char* bitArr = this->spB->getUsingBlockBitArray();
+    bitArr[idx]? bitArr[idx] = 0 : bitArr[idx] = 1;
+    
 }

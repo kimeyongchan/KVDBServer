@@ -44,12 +44,13 @@ public:
         
         this->key = key;
         this->ba = ba;
-        this->tree = addr;
+        this->tree = addr; 
     }
     string getKey() {  return this->key; }
     uint64_t getBlockAddress() {  return this->ba; }
     void* getRadixTree() { return this->tree; }
     void insertVoidRadix(void* addr) { this->tree = addr; }
+
 };
 
 struct Node
@@ -62,7 +63,7 @@ struct Node
 class RadixTree
 {
 private:
-    Node* headeNnode;
+    Node* headNode;
     uint32_t dataSize;
     
 private:
@@ -76,7 +77,7 @@ public:
     {
         this->dataSize = 0;
         try{
-            this->headeNnode = new Node();
+            this->headNode = new Node();
             
             
         }catch(bad_alloc& e)
@@ -87,14 +88,14 @@ public:
     }
     ~RadixTree()
     {
-        //delete all;
+        
     }
     
     RadixTree(NamedData* data)
     {
         this->dataSize = 0;
         try{
-            this->headeNnode = new Node();
+            this->headNode = new Node();
             insertData(data->getKey(), data->getBlockAddress());
             
         }catch(bad_alloc& e)
@@ -111,6 +112,7 @@ public:
     {
         return this->dataSize;
     }
+
 };
 
 #endif /* defined(__radixTreeCache__radix_tree__) */
