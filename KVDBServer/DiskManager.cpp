@@ -12,6 +12,7 @@
 #include "DirectoryData.h"
 #include "KeyValueData.h"
 #include "KeyValueChainingData.h"
+#include "LogInfo.h"
 
 
 DiskManager::DiskManager()
@@ -26,7 +27,7 @@ DiskManager::~DiskManager()
 }
 
 
-bool DiskManager::initialize(const char* fileName, uint16_t blockSize, uint64_t diskSize, SuperBlock* superBlock) //if not exist disk
+bool DiskManager::initialize(const char* fileName, uint16_t blockSize, uint64_t diskSize, SuperBlock* _superBlock) //if not exist disk
 {
     char filePath[1000] = {0, };
     memcpy(filePath, __FILE__, strlen(__FILE__));
@@ -56,6 +57,8 @@ bool DiskManager::initialize(const char* fileName, uint16_t blockSize, uint64_t 
     
     lseek(fd, 0, SEEK_SET);
     
+    superBlock = new SuperBlock();
+    
     /////////////////////////// get block size
     
     uint16_t diskBlockSize;
@@ -73,6 +76,7 @@ bool DiskManager::initialize(const char* fileName, uint16_t blockSize, uint64_t 
     }
     
     superBlock->setBlockSize(blockSize);
+    _superBlock->setBlockSize(blockSize);
     
     
     
@@ -88,6 +92,7 @@ bool DiskManager::initialize(const char* fileName, uint16_t blockSize, uint64_t 
     }
     
     superBlock->setBlockCount(blockCount);
+    _superBlock->setBlockCount(blockCount);
     
     
     /////////////////////////// get cln
@@ -102,6 +107,7 @@ bool DiskManager::initialize(const char* fileName, uint16_t blockSize, uint64_t 
     }
     
     superBlock->setCln(cln);
+    _superBlock->setCln(cln);
     
     
     /////////////////////////// bitArray memset 0
@@ -109,6 +115,7 @@ bool DiskManager::initialize(const char* fileName, uint16_t blockSize, uint64_t 
     int byteCntForUsingBlockBit = bitToByte(blockCount);
     
     superBlock->allocateUsingBlockBitArray(byteCntForUsingBlockBit);
+    _superBlock->allocateUsingBlockBitArray(byteCntForUsingBlockBit);
 
     if(read(fd, superBlock->getUsingBlockBitArray(), byteCntForUsingBlockBit) < 0)
     {
@@ -116,7 +123,7 @@ bool DiskManager::initialize(const char* fileName, uint16_t blockSize, uint64_t 
         return false;
     }
     
-    
+    memcpy(_superBlock->getUsingBlockBitArray(), superBlock->getUsingBlockBitArray(), byteCntForUsingBlockBit);
     
     //////////////////////////// get root address
     
@@ -129,6 +136,7 @@ bool DiskManager::initialize(const char* fileName, uint16_t blockSize, uint64_t 
     }
     
     superBlock->setRootBlockAddress(rootBlockAddress);
+    _superBlock->setRootBlockAddress(rootBlockAddress);
     
     
     ////////////////////////// get root
@@ -142,6 +150,16 @@ bool DiskManager::initialize(const char* fileName, uint16_t blockSize, uint64_t 
     }
     
     superBlock->setRootBlock(rootBlock);
+    
+    
+    Block* _rootBlock = new Block();
+    if(readBlock(rootBlockAddress, _rootBlock) == false)
+    {
+        ErrorLog("root block read error");
+        return false;
+    }
+    
+    _superBlock->setRootBlock(_rootBlock);
 
     
 
@@ -154,6 +172,8 @@ bool DiskManager::createDisk(const char* fileName, uint16_t blockSize, uint64_t 
     const int ONE_KBYTE = 1024;
     
     char forMemsetArray[ONE_KBYTE];
+    
+    memset(forMemsetArray, 0, sizeof(ONE_KBYTE));
     
     if ((fd = open( fileName, O_RDWR | O_CREAT | O_EXCL | O_SYNC , 0666)) < 0) // ToDo. correct permission later
     {
@@ -523,7 +543,42 @@ bool DiskManager::readDisk(uint64_t address, void* buffer, int readSize)
 
 bool DiskManager::recovery(const LogInfo* logInfo)
 {
+    bool isAllocateBlock = logInfo->isAllocateBlock;
+    bool isFreeBlock = logInfo->isFreeBlock;
+    bool isInsert = logInfo->isInsert;
+    
+    int64_t prevBlockAddress = logInfo->prevBlockAddress;
+    int64_t blockAddress = logInfo->blockAddress;
+    uint16_t offsetLocation = logInfo->offsetLocation;
+    uint16_t offset = logInfo->offset;
+    
+    
+    
+    if(isAllocateBlock)
+    {
+        int bitSeek = convertAddressToBitSeek(blockAddress);
+        
+        int bitIndex = (bitSeek / 8);
+        int bitPosition = bitSeek % 8;
+        
+        char bit = 1;
+        bit = bit << bitPosition;
+        
+        char* bitArray = superBlock->getUsingBlockBitArray();
+        
+        char* pBit = bitArray + bitIndex;
+        
+        *pBit |= bit;
+        
+        
+    }
     
     return true;
 }
+
+int DiskManager::convertAddressToBitSeek(int64_t blockAddress)
+{
+    return ((blockAddress - superBlock->getRootBlockAddress()) / superBlock->getBlockSize());
+}
+
 
