@@ -83,7 +83,7 @@ bool RadixTree::insertData(string key, uint64_t ba)
             void * rt;
             try{
                 nd = new NamedData(key,ba);
-                rt = nd->getRadixTree();
+                rt = nd->getRadixTree(); //이거 없어도 될거 같은데?
                 
                 if(rt == NULL)
                     rt = new RadixTree;

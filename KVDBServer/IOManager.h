@@ -137,7 +137,7 @@ private:
     bool caching(NamedData* firstParentData);
     
     
-private:
+public:
     
     void TEST_INSERT();
     void TEST_INSERT_DIR();
