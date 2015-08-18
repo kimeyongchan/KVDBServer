@@ -18,6 +18,7 @@
 #include "NamedCache.h"
 #include "bufferCache.h"
 #include "radix_tree.h"
+#include "LogBuffer.h"
 
 IOManager::IOManager()
 {
@@ -268,12 +269,15 @@ bool IOManager::parsingQuery(const char* query, int queryLen, RequestInfo** pri)
 
 int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
 {
-    /*
+    
     DebugLog("INSERT - key : %s, value : %s ", reqInfo->key.c_str(), reqInfo->value.c_str());
     
     //TEST_INSERT();
 
-    NamedCache* namedCache = KVDBServer::getInstance()->namedCache;
+    NamedCache*  namedCache  = KVDBServer::getInstance()->namedCache;
+    BufferCache* bufferCache = KVDBServer::getInstance()->bufferCache;
+    LogBuffer*   logBuffer   = KVDBServer::getInstance()->logBuffer;
+    LogFile*     logFile     = KVDBServer::getInstance()->logFile;
  
     lastBlockChainingAdrList.clear();
     componentList.clear();
@@ -281,7 +285,7 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
     insertBufferCacheDataMap.clear();                   // 버퍼캐시
     std::vector<DirtyBlockInfo> dirtyBlockInfoList;     // 로깅, 디스크
   
-    NamedData*  parentNamedData;
+    NamedData*  parentNamedData = NULL;
     uint64_t    indirectionBlockAdr =0;
     componentList = split(reqInfo->key, '/');
    
@@ -296,17 +300,20 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
         if(childNd == NULL)// 없을때
         {
             returnVal = checkBufferCacheAndDisk(nd->getBlockAddress(), i-1, componentList.size()-1);
-            
-            parentNamedData = nd;  // 네임드 캐시에 넣을때 쓰일 변수
-            indirectionBlockAdr = namedCacheDataList.back().indirectionBlockAdr;
-            
+
             if(returnVal.returnCode <0)
             {
                 caching(parentNamedData);
                 return returnVal.returnCode;
             }
             else
+            {
+                parentNamedData = nd;  // 네임드 캐시에 넣을때 쓰일 변수
+                
+                if(namedCacheDataList.size() > 0)
+                    indirectionBlockAdr = namedCacheDataList.back().indirectionBlockAdr;
                 break;
+            }
         }
         
         if(i < componentList.size()-1)  // 있을때, 중간 노드 일때
@@ -317,24 +324,24 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
         
         // 있을때 맨 마지막일 때
         returnVal = checkBufferCacheAndDisk(childNd->getBlockAddress(), i, componentList.size()-1);
-        indirectionBlockAdr = childNd->getBlockAddress();
-        namedCacheDataList.pop_back();  // childND가 있다.
-        parentNamedData = nd;  // 네임드 캐시에 넣을때 쓰일 변수
-        
+ 
         if(returnVal.returnCode <0)
         {
             caching(parentNamedData);
             return returnVal.returnCode;
         }
         else
+        {
+            indirectionBlockAdr = childNd->getBlockAddress();
+            namedCacheDataList.pop_back();  // childND가 있다.
+            parentNamedData = nd;  // 네임드 캐시에 넣을때 쓰일 변수
             break;
+        }
  
         
     }// for end
     
-    
- /*
-    
+
     Block*      block    = returnVal.block;
     uint64_t    blockAdr = ibaToBa(indirectionBlockAdr);
     std::string key      = componentList[returnVal.componentIdx];
@@ -371,7 +378,6 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
         }else
             lastBlock = NULL;
     }
-    
     
     
     if(lastBlock != NULL) // 블럭에 바로 넣을 수 있다.
@@ -426,7 +432,7 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
             insertBufferCacheDataMap.insert(std::pair<uint64_t, Block*>(newFirstBlockAdr, newFirstBlock)); // 체이닝 블럭 넣기
         }
         
-        uint32_t remainValueSize = reqInfo->value.size();
+        uint32_t remainValueSize = (uint32_t)reqInfo->value.size();
          while(remainValueSize > 0)
          {
              if(curBlock->getFreeSpace() >=
@@ -443,7 +449,7 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
                  uint16_t newOffset = curBlock->getNewOffset(data->getDataSize());
                  curBlock->insertData(curBlock->getNewIndirectionNumber(), newOffset, data);
                  
-                 uint16_t indNum = ibaToOffsetIdx(logBufferIndBlockAdr, curBlockAdr);
+                 uint16_t indNum = ibaToOffsetIdx(curIndBlockAdr, curBlockAdr);
                  dirtyBlockInfoList.push_back(DirtyBlockInfo(curBlock, isAllockBlock, false, true, curBlockAdr, indNum, prevBlockAdr));
                  
                  break;
@@ -454,17 +460,14 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
              KeyValueChainingData* data = new KeyValueChainingData();
              data->setFormatType(FLAG_KEY_VALUE_CHAINING_DATA); // 체이닝 데이터
              data->setKey(key);
-             
-             if(logBufferDataList.size() !=0)
-                 addingIndirectionByte = 2;
-             
-             int curBlockValueSize = curBlock->getFreeSpace() - (data->getDataSize()+ addingIndirectionByte);
+      
+             int curBlockValueSize = curBlock->getFreeSpace() - (data->getDataSize()+ addingOffsetByte);
              std::string curBlockValue =reqInfo->value.substr( reqInfo->value.size()-remainValueSize,curBlockValueSize);
              data->setValue(curBlockValue);
              remainValueSize -= curBlockValueSize;
              
              
-             uint64_t newChingingBlockAdr = cacheMgr->getNewBlockAdr();  // 캐시로 부터 새로운 주소를 받아온다.
+             uint64_t newChingingBlockAdr = bufferCache->newBlock();  // 캐시로 부터 새로운 주소를 받아온다.
              Block* newChainingBlock = new Block();
              uint64_t newBlockIndAdr = newChainingBlock->getFirstIndirectionBlockAdr(newChingingBlockAdr);
              data->setIndBlockAddress(newBlockIndAdr);
@@ -484,11 +487,12 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
              uint16_t indNum_ = ibaToOffsetIdx(curIndBlockAdr, curBlockAdr);
              dirtyBlockInfoList.push_back(DirtyBlockInfo(curBlock, isAllockBlock, false, true, curBlockAdr, indNum_, prevBlockAdr));
              
-             curBlock = newChainingBlock;
-             curIndBlockAdr = newBlockIndAdr;
-             curBlockAdr = newChingingBlockAdr;
-             isAllockBlock = true;
-             prevBlockAdr = curBlockAdr;
+             curBlock               = newChainingBlock;
+             curIndBlockAdr         = newBlockIndAdr;
+             curBlockAdr            = newChingingBlockAdr;
+             isAllockBlock          = true;
+             prevBlockAdr           = curBlockAdr;
+             addingOffsetByte       = 2;
              
          }// while end
      }// else
@@ -499,41 +503,30 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
     // 로그버퍼에 넣는다
     for(DirtyBlockInfo blockInfo : dirtyBlockInfoList)
     {
-        
-        Block*     block    = blockInfo.block;
         uint64_t   blockAdr = blockInfo.blockAddress;
         uint16_t   indNum   = blockInfo.indirectionNum;
         uint16_t   offset   = blockInfo.block->getOffsetByIndNum(indNum);
         Data*      data     = blockInfo.block->getData(indNum);
         
-        
-        KVDBServer::getInstance()->logBuffer->saveLog(blockInfo.isAllocateBlock,
-                                                      blockInfo.isInsert, blockAdr, offset, data);  // 바꿔줘야함
-        //KVDBServer::getInstance()->logBuffer->saveLog(blockInfo.isAllocateBlock,blockInfo.isFreeBlock, blockInfo.isInsert,
-        //                                             blockAdr, indNum ,offset, data, blockInfo.prevBlockAddress);
+        KVDBServer::getInstance()->logBuffer->saveLog(blockInfo.isAllocateBlock,blockInfo.isFreeBlock, blockInfo.isInsert,
+                                                     blockAdr, indNum ,offset, data, blockInfo.prevBlockAddress);
     }
     
-
      // 로그파일에 쓴다
-     const char* log;
-     KVDBServer::getInstance()->logBuffer->readLogBuffer(&log);
-     KVDBServer::getInstance()->logFile->writeLogFile(strlen(log), log);
+     char* log;
+     logBuffer->commitLogBuffer(&log);
+     logFile->writeLogFile((int)strlen(log), log);
  
-     // 로그버퍼 클리어
-     KVDBServer::getInstance()->logBuffer->clear();
-     
-     
+  
      //디스크에 쓴다.
     for(DirtyBlockInfo blockInfo : dirtyBlockInfoList)
     {
         KVDBServer::getInstance()->diskManager->writeBlock(blockInfo.blockAddress,blockInfo.block);
         blockInfo.block->setDirty(false);
     }
-    
      
      // 로그파일 클리어
-     KVDBServer::getInstance()->logFile->clear();
-     */
+     logFile->clear();
      
      return 0;
  }
@@ -1091,7 +1084,9 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
 
 bool IOManager::caching(NamedData* firstParentData)
 {
- /*
+    NamedCache*  namedCache  = KVDBServer::getInstance()->namedCache;
+    BufferCache* bufferCache = KVDBServer::getInstance()->bufferCache;
+    
     NamedData* parentNamedData = firstParentData;
     
     for(NamedCacheData data: namedCacheDataList)
@@ -1106,45 +1101,46 @@ bool IOManager::caching(NamedData* firstParentData)
     {
         if(false == bufferCache->insertBlock2Cache(iter->first, iter->second))
         {
-            uint64_t blockAdr = 0;
-            Block* block = 0;
-            
-            bool result = bufferCache->getDeleteBlock(blockAdr, block);  // BlockInfo 는 블럭주소 , 블락을 멤버로 갖는 클래스 가상으로 생각해놓은 클래스임
-            
-            if(block == NULL)
-            {
-                bufferCache->insertBlock2Cache(iter->first, iter->second) // 다시 넣어준다.
-                continue;
-            }
-            
-            KVDBServer::getInstance()->diskManager->writeBlock(blockAdr, block);
-            bufferCache->deleteDirty(blockAdr);
-            bufferCache->insertBlock2Cache(iter->first, iter->second)  // 다시 넣어준다.
+//            uint64_t blockAdr = 0;
+//            Block* block = NULL;
+//            
+//            bool result = bufferCache->getDeleteBlock(blockAdr, &block);  // BlockInfo 는 블럭주소 , 블락을 멤버로 갖는 클래스 가상으로 생각해놓은 클래스임
+//            
+//            if(result == false)
+//            {
+//                bufferCache->insertBlock2Cache(iter->first, iter->second); // 다시 넣어준다.
+//                continue;
+//            }
+//            
+//            KVDBServer::getInstance()->diskManager->writeBlock(blockAdr, block);
+//            bufferCache->deleteDirty(blockAdr);
+//            bufferCache->insertBlock2Cache(iter->first, iter->second);  // 다시 넣어준다.
         }
     }
-     */
+    
     return true;
 }
 
 
  IoMgrReturnValue IOManager::checkBufferCacheAndDisk(uint64_t indirectionBa, int curIdx, long lastIdx)
  {
-/*
+
      int        curentIdx       = curIdx;
      uint64_t   blockAddress    = ibaToBa(indirectionBa);
      Block*     block           = NULL;
      
      while(true)
      {
-         block = bufferCache->findBlock(blockAddress);
+         block = KVDBServer::getInstance()->bufferCache->findBlock(blockAddress);
          
          if(block == NULL)
          {
              block = new Block();
              
-             if(false == KVDBServer::getInstance()->m_diskManager->readBlock(blockAddress, block))
+             if(false == KVDBServer::getInstance()->diskManager->readBlock(blockAddress, block))
              {
                  delete block;
+                 
                  IoMgrReturnValue returnVal(NULL, curentIdx, -1);
                  return returnVal; // 블럭이 없다.
              }
@@ -1153,9 +1149,14 @@ bool IOManager::caching(NamedData* firstParentData)
              
          }
          
-         Data* data = block->getData(componentList[curentIdx]);
+   
+         std::string comp = componentList[curentIdx];
+         if(curentIdx < 0)
+             comp = componentList[0];
          
-         if(curentIdx < lastIdx)  // 중간 데이터 일때
+         
+         Data* data = block->getData(comp);
+         if((curentIdx < lastIdx)  && (curentIdx >= 0))  // 중간 데이터 일때
          {
              if(data == NULL)
              {
@@ -1190,20 +1191,24 @@ bool IOManager::caching(NamedData* firstParentData)
          {
              if(data == NULL)
              {
+                 lastBlockChainingAdrList.push_back(blockAddress);
                  if(block->getChaingAddress() > 0)  // 블럭체이닝 있을때
                  {
-                     lastBlockChainingAdrList.push_back(blockAddress);
                      blockAddress    = block->getChaingAddress();
                      continue;
                  }
                  else   // 마지막 데이터인데 현재 블럭에 데이터 없고 체이닝된 블럭도 없을 때
                  {
-                     uint16_t indNum = block->getIndNumByKey(componentList[curentIdx]);
+                     uint16_t indNum = block->getNewIndirectionNumber();
                      uint64_t indBlockAdr = block->getIndirectionBlockAdr(blockAddress, indNum);
                      NamedCacheData namedCacheData(curentIdx, indBlockAdr);
                      namedCacheDataList.push_back(namedCacheData);
                      
-                     IoMgrReturnValue returnVal(block, curentIdx, 0);
+                     int curentIndex =curentIdx;
+                     if(curentIdx < 0)
+                         curentIndex =0;
+                     
+                     IoMgrReturnValue returnVal(block, curentIndex, 0);
                      return returnVal;
                  }
              }
@@ -1215,7 +1220,7 @@ bool IOManager::caching(NamedData* firstParentData)
          }
          
      }// while 문 end
-     */
+     
      
      
      IoMgrReturnValue returnVal(NULL, 0, -1);

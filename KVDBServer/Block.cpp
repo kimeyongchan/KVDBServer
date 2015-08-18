@@ -188,7 +188,7 @@ uint16_t Block::getIndNumByKey(std::string componentKey)
             return iter->first;
     }
     
-    return 0;
+    return -1;
 }
 
 uint16_t Block::getOffsetByIndNum(uint16_t indNum)
@@ -199,7 +199,7 @@ uint16_t Block::getOffsetByIndNum(uint16_t indNum)
             return iter->second->offset;
     }
     
-    return 0;
+    return -1;
 }
 
 uint16_t Block::getOffsetByKey(std::string componentKey)
