@@ -584,7 +584,20 @@ bool DiskManager::recovery(const LogInfo* logInfo)
 
 int DiskManager::convertAddressToBitSeek(int64_t blockAddress)
 {
-    return ((blockAddress - superBlock->getRootBlockAddress()) / superBlock->getBlockSize());
+    return (int)((blockAddress - superBlock->getRootBlockAddress()) / superBlock->getBlockSize());
 }
 
 
+bool DiskManager::writeBitArray(const char* bitArray)
+{
+    uint64_t bitArrayAddress = sizeof(uint16_t) + sizeof(uint64_t) + sizeof(uint32_t);
+    
+    int byteArrayCount = (int)(superBlock->getBlockCount() / 8);
+    
+    if(superBlock->getBlockCount() % 8 != 0 )
+        byteArrayCount++;
+    
+    writeDisk(bitArrayAddress, bitArray, byteArrayCount);
+    
+    return true;
+}
