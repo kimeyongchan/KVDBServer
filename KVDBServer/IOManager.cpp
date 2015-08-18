@@ -269,18 +269,21 @@ bool IOManager::parsingQuery(const char* query, int queryLen, RequestInfo** pri)
 
 int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
 {
-    
- /*
+    /*
     DebugLog("INSERT - key : %s, value : %s ", reqInfo->key.c_str(), reqInfo->value.c_str());
+    
+    //TEST_INSERT();
+
+    NamedCache* namedCache = KVDBServer::getInstance()->namedCache;
  
     lastBlockChainingAdrList.clear();
     componentList.clear();
     namedCacheDataList.clear();                         // 네임드캐시
     insertBufferCacheDataMap.clear();                   // 버퍼캐시
     std::vector<DirtyBlockInfo> dirtyBlockInfoList;     // 로깅, 디스크
-    
-    NamedData* parentNamedData;
-    uint64_t indirectionBlockAdr =0;
+  
+    NamedData*  parentNamedData;
+    uint64_t    indirectionBlockAdr =0;
     componentList = split(reqInfo->key, '/');
    
     IoMgrReturnValue returnVal(NULL, 0, 0);  // 리턴 블럭이 루트 블럭일때는 인덱스가 -1일것이다 참고 해야 한다.
@@ -290,7 +293,7 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
     {
         std::string c = componentList[i];
         NamedData* childNd = namedCache->findComponent(c, nd); // c: 찾으려는 컴퍼넌트 , nd: 부모 NamedData
-
+        
         if(childNd == NULL)// 없을때
         {
             returnVal = checkBufferCacheAndDisk(nd->getBlockAddress(), i-1, componentList.size()-1);
@@ -326,11 +329,12 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
         }
         else
             break;
+ 
         
     }// for end
     
     
-    
+ /*
     
     Block*      block    = returnVal.block;
     uint64_t    blockAdr = ibaToBa(indirectionBlockAdr);
@@ -486,9 +490,9 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
              curBlockAdr = newChingingBlockAdr;
              isAllockBlock = true;
              prevBlockAdr = curBlockAdr;
-         }
-         
-     }// while end
+             
+         }// while end
+     }// else
      
     // 캐싱한다
     caching(parentNamedData);
@@ -1317,7 +1321,7 @@ IoMgrReturnValue findBufferCacheAndDisk(uint64_t indirectionBa, int curIdx, long
 void  IOManager::TEST_INSERT()
 {
      // 예상 데이터    Key :  a/b   Value: hello 내지는 그냥  h
-    
+  
     InsertRequestInfo reqInfo;
     reqInfo.key = "a/b";
     reqInfo.value = "he";
@@ -1330,7 +1334,8 @@ void  IOManager::TEST_INSERT()
      // 루트블럭 가져오기
      SuperBlock* superBlock = KVDBServer::getInstance()->superBlock;
      uint64_t rootBlockAdr = superBlock->getRootBlockAddress();
-     Block* rootBlock = new Block();
+    Block* rootBlock = superBlock->getRootBlock();
+    uint64_t aIndBlockAdr = rootBlock->getFirstIndirectionBlockAdr(rootBlockAdr);
      
      // 루트블럭에 넣을 디렉터리를 만든다.
      DirectoryData* data = new DirectoryData();
@@ -1365,13 +1370,31 @@ void  IOManager::TEST_INSERT()
      // 더티된 블럭들 써준다.
      KVDBServer::getInstance()->diskManager->writeBlock(rootBlockAdr, rootBlock);
      KVDBServer::getInstance()->diskManager->writeBlock(aBlockAdr, aBlock);
-     
-     
+    
+    NamedCache* n = KVDBServer::getInstance()->namedCache;
+    
+    NamedData* parent = KVDBServer::getInstance()->namedCache->getRootAddr();
+    NamedData* child  = new NamedData("a", aIndBlockAdr);
+    KVDBServer::getInstance()->namedCache->insert( parent, child);
+    NamedData* temp = n->findComponent("a", parent);
+    cout<< temp->getKey()<< "is founded" << endl;
+    parent = child;
+    child = new NamedData("b", aBlockFirstIndBlockAdr);
+    
+    n->insert( parent, child);
+    
+    temp = n->findComponent("b", parent);
+    cout<< temp->getKey()<< "is founded" << endl;
+    
+    n->deleteData("b", parent);
+    temp = n->findComponent("b", parent);
+    
+    
+    if(temp == NULL)
+        cout <<" delete success" << endl;
      delete aBlock;
-     delete rootBlock;
      
      DebugLog("INSERT - key : %s, value : %s ", reqInfo.key.c_str(), reqInfo.value.c_str());
-    
     
 }
 void IOManager::TEST_INSERT_DIR()
