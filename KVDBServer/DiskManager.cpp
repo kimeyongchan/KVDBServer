@@ -225,6 +225,12 @@ bool DiskManager::createDisk(const char* fileName, uint16_t blockSize, uint64_t 
     
     DebugLog("byteCntForUsingBlockBit : %d", byteCntForUsingBlockBit);
     
+    uint8_t rootSetByte = 0x80; // 1000000 bit
+    
+    write(fd, &rootSetByte, 1);
+    
+    byteCntForUsingBlockBit -= 1;
+    
     for(; byteCntForUsingBlockBit >= ONE_KBYTE; byteCntForUsingBlockBit -= ONE_KBYTE)
     {
         write(fd, forMemsetArray, ONE_KBYTE);
