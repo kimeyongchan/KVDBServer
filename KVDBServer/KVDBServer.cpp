@@ -111,7 +111,7 @@ bool KVDBServer::Initialize(int workerThreadCount)
             }
         }
         
-        //diskManager->setCln(logFilecln);
+        diskManager->finishRecovery(logFile->getCln(), superBlock);
     }
     else if(superBlock->getCln() == logFile->getCln()) // not recovery
     {

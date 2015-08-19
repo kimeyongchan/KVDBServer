@@ -25,7 +25,7 @@ public:
     LogBuffer();
     ~LogBuffer();
     bool initialize(int _cln);
-    bool saveLog(bool isAllocateBlock, bool isFreeBlock, bool isInsert, int64_t blockAddress, uint16_t offsetLocation, uint16_t offset, const Data* data, int64_t prevBlockAddress = NULL); // not allocate data
+    bool saveLog(bool isAllocateBlock, bool isFreeBlock, bool isInsert, int64_t blockAddress, uint16_t freeSpace, uint16_t offsetLocation, uint16_t offset, const Data* data, int64_t prevBlockAddress = NULL, int64_t nextBlockAddress = NULL); // not allocate data
     int commitLogBuffer(char** pLogBuffer);
     //void clear();
     
