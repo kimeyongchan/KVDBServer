@@ -19,7 +19,9 @@ public:
     bool isFreeBlock;
     bool isInsert;
     int64_t prevBlockAddress;
+    int64_t nextBlockAddress;
     int64_t blockAddress;
+    uint16_t freeSpace;
     uint16_t offsetLocation;
     uint16_t offset;
     Data* data;

@@ -223,6 +223,8 @@ bool DiskManager::createDisk(const char* fileName, uint16_t blockSize, uint64_t 
         byteCntForUsingBlockBit++;
     }
     
+    
+    
     DebugLog("byteCntForUsingBlockBit : %d", byteCntForUsingBlockBit);
     
     uint8_t rootSetByte = 0x80; // 1000000 bit
@@ -554,30 +556,170 @@ bool DiskManager::recovery(const LogInfo* logInfo)
     bool isInsert = logInfo->isInsert;
     
     int64_t prevBlockAddress = logInfo->prevBlockAddress;
+    int64_t nextBlockAddress = logInfo->nextBlockAddress;
     int64_t blockAddress = logInfo->blockAddress;
     uint16_t offsetLocation = logInfo->offsetLocation;
     uint16_t offset = logInfo->offset;
     
     
     
-    if(isAllocateBlock)
+    if(isAllocateBlock || isFreeBlock)
     {
         int bitSeek = convertAddressToBitSeek(blockAddress);
         
         int bitIndex = (bitSeek / 8);
         int bitPosition = bitSeek % 8;
         
-        char bit = 1;
-        bit = bit << bitPosition;
+        unsigned char bit = 0x80;
+        bit = bit >> bitPosition;
         
         char* bitArray = superBlock->getUsingBlockBitArray();
         
         char* pBit = bitArray + bitIndex;
         
-        *pBit |= bit;
+        if(isAllocateBlock)
+        {
+            *pBit |= bit;
+        }
+        else
+        {
+            *pBit &= ~bit;
+        }
         
+        writeDisk(sizeof(uint16_t) + sizeof(uint64_t) + sizeof(uint32_t), bitArray, bitToByte(superBlock->getBlockCount()));
         
+        if(prevBlockAddress != 0)
+        {
+            if(isAllocateBlock)
+            {
+                writeDisk(prevBlockAddress + BLOCK_CHAINING_OFFSET, &blockAddress, sizeof(blockAddress));
+            }
+            else
+            {
+                if(nextBlockAddress != 0)
+                {
+                    writeDisk(prevBlockAddress + BLOCK_CHAINING_OFFSET, &nextBlockAddress, sizeof(nextBlockAddress));
+                }
+                else
+                {
+                    int64_t emptyBlockAddress = 0;
+                    writeDisk(prevBlockAddress + BLOCK_CHAINING_OFFSET, &emptyBlockAddress, sizeof(emptyBlockAddress));
+                }
+            }
+        }
+        else
+        {
+            if(isAllocateBlock)
+            {
+                
+            }
+            else
+            {
+                //delete first block
+            }
+        }
     }
+    
+    
+    if(isAllocateBlock)
+    {
+        Block newBlock;
+        writeBlock(blockAddress, &newBlock);
+    }
+    else if(isFreeBlock)
+    {
+        return true;
+    }
+    
+    writeDisk(blockAddress + BLOCK_FREE_SPACE_OFFSET, &logInfo->freeSpace, sizeof(logInfo->freeSpace));
+    
+    Data* data = logInfo->data;
+    
+    
+    if(isInsert)
+    {
+        writeDisk(blockAddress + BLOCK_HEADER_SIZE + offsetLocation, &offset, sizeof(offset));
+    }
+    else
+    {
+        uint16_t delOffset = 0;
+        writeDisk(blockAddress + BLOCK_HEADER_SIZE + offsetLocation, &delOffset, sizeof(delOffset));
+    }
+    
+    
+    if(isInsert)
+    {
+        char blockArray[data->getDataSize()];
+        
+        int8_t formatType = data->getFormatType();
+        memcpy(blockArray, &formatType, sizeof(formatType));
+        
+        
+        uint8_t keyLen = data->getKeyLength();
+        memcpy(blockArray + sizeof(formatType), &keyLen, sizeof(keyLen));
+        memcpy(blockArray + sizeof(formatType) + sizeof(keyLen), data->getKey().c_str(), keyLen);
+        
+        char* formatArray = blockArray + sizeof(formatType) + sizeof(keyLen)+ keyLen;
+        
+        switch (formatType)
+        {
+            case 0: //directory
+            {
+                DirectoryData* dd = (DirectoryData*)data;
+                
+                int64_t indBlockAddress = dd->getIndBlockAddress();
+                memcpy(formatArray, &indBlockAddress, sizeof(indBlockAddress));
+                break;
+            }
+            case 1: //not chaining kv data
+            {
+                KeyValueData* kd = (KeyValueData*)data;
+                
+                std::string dataStr = kd->getValue();
+                uint32_t dataLen = (uint32_t)dataStr.length();
+                
+                memcpy(formatArray, &dataLen, sizeof(dataLen));
+                memcpy(formatArray + sizeof(dataLen), dataStr.c_str(), dataLen);
+                break;
+            }
+            case 2:
+            {
+                KeyValueChainingData* kd = (KeyValueChainingData*)data;
+                
+                std::string dataStr = kd->getValue();
+                uint32_t dataLen = (uint32_t)dataStr.length();
+                int64_t chainingAddress = kd->getIndBlockAddress();
+                
+                memcpy(formatArray, &dataLen, sizeof(dataLen));
+                memcpy(formatArray + sizeof(dataLen), dataStr.c_str(), dataLen);
+                memcpy(formatArray + sizeof(dataLen) + dataLen, &chainingAddress, sizeof(chainingAddress));
+                break;
+            }
+            default:
+                ErrorLog("invalid format type - %d", formatType);
+                break;
+        }
+
+        writeDisk(blockAddress + offset, blockArray, data->getDataSize());
+    }
+
+    
+    return true;
+}
+
+bool DiskManager::finishRecovery(uint32_t _scn, SuperBlock *_superBlock)
+{
+    writeDisk(SUPER_BLOCK_SCN_OFFSET, &_scn, sizeof(_scn));
+    superBlock->setCln(_scn);
+    
+    readBlock(superBlock->getRootBlockAddress(), superBlock->getRootBlock());
+    
+    _superBlock->setBlockSize(superBlock->getBlockSize());
+    _superBlock->setBlockCount(superBlock->getBlockCount());
+    _superBlock->setCln(superBlock->getCln());
+    memcpy(_superBlock->getUsingBlockBitArray(), superBlock->getUsingBlockBitArray(), bitToByte(superBlock->getBlockCount()));
+    _superBlock->setRootBlockAddress(superBlock->getRootBlockAddress());
+    _superBlock->setRootBlock(superBlock->getRootBlock());
     
     return true;
 }
@@ -601,3 +743,6 @@ bool DiskManager::writeBitArray(const char* bitArray)
     
     return true;
 }
+
+
+

@@ -7,7 +7,6 @@ class SuperBlock;
 class Block;
 class LogInfo;
 
-const int BLOCK_HEADER_SIZE = sizeof(uint16_t) + sizeof(uint16_t) + sizeof(int64_t);
 
 class DiskManager
 {
@@ -22,6 +21,8 @@ public:
     bool writeScn(uint32_t _scn);
     bool writeBitArray(const char* bitArray);
     bool recovery(const LogInfo* logInfo);
+    bool finishRecovery(uint32_t _scn, SuperBlock* _superBlock);
+    SuperBlock* getSuperBlock() { return superBlock; }
     
 private:
     bool createDisk(const char* fileName, uint16_t blockSize, uint64_t diskSize);

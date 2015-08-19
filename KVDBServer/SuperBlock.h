@@ -4,6 +4,13 @@
 #include <cstdInt>
 #include <cstdlib>
 
+#define SUPER_BLOCK_BLOCK_SIZE_OFFSET   0
+#define SUPER_BLOCK_BLOCK_COUNT_OFFSET  sizeof(uint16_t)
+#define SUPER_BLOCK_SCN_OFFSET          sizeof(uint16_t) + sizeof(uint64_t)
+#define SUPER_BLOCK_BIT_ARRAY_OFFSET    sizeof(uint16_t) + sizeof(uint64_t) + sizeof(uint32_t)
+
+
+
 class Block;
 
 class SuperBlock

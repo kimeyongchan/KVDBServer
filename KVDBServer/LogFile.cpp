@@ -185,6 +185,9 @@ bool LogFile::recoveryLogFile(int diskCln, std::deque<LogInfo*>* dequeue)
         {
             memcpy(&logInfo->prevBlockAddress, pLogArray, sizeof(logInfo->prevBlockAddress));
             pLogArray += sizeof(logInfo->prevBlockAddress);
+            
+            memcpy(&logInfo->nextBlockAddress, pLogArray, sizeof(logInfo->nextBlockAddress));
+            pLogArray += sizeof(logInfo->nextBlockAddress);
         }
         
         memcpy(&logInfo->blockAddress, pLogArray, sizeof(logInfo->blockAddress));
@@ -192,12 +195,16 @@ bool LogFile::recoveryLogFile(int diskCln, std::deque<LogInfo*>* dequeue)
         
         if(logInfo->isFreeBlock)
         {
+            logInfo->freeSpace = 0;
             logInfo->offsetLocation = 0;
             logInfo->offset = 0;
             logInfo->data = NULL;
         }
         else
         {
+            memcpy(&logInfo->freeSpace, pLogArray, sizeof(logInfo->freeSpace));
+            pLogArray += sizeof(logInfo->freeSpace);
+            
             memcpy(&logInfo->offsetLocation, pLogArray, sizeof(logInfo->offsetLocation));
             pLogArray += sizeof(logInfo->offsetLocation);
 

@@ -64,7 +64,7 @@ int LogBuffer::commitLogBuffer(char** pLogBuffer)
     return sendLogLen;
 }
 
-bool LogBuffer::saveLog(bool isAllocateBlock, bool isFreeBlock, bool isInsert, int64_t blockAddress, uint16_t offsetLocation, uint16_t offset, const Data* data, int64_t prevBlockAddress)
+bool LogBuffer::saveLog(bool isAllocateBlock, bool isFreeBlock, bool isInsert, int64_t blockAddress, uint16_t freeSpace, uint16_t offsetLocation, uint16_t offset, const Data* data, int64_t prevBlockAddress, int64_t nextBlockAddress)
 {
     
     char* tempSeek = currentLogBufferSeek;
@@ -92,6 +92,9 @@ bool LogBuffer::saveLog(bool isAllocateBlock, bool isFreeBlock, bool isInsert, i
     {
         memcpy(currentLogBufferSeek, &prevBlockAddress, sizeof(prevBlockAddress));
         currentLogBufferSeek += sizeof(prevBlockAddress);
+        
+        memcpy(currentLogBufferSeek, &nextBlockAddress, sizeof(nextBlockAddress));
+        currentLogBufferSeek += sizeof(nextBlockAddress);
     }
     
     memcpy(currentLogBufferSeek, &blockAddress, sizeof(blockAddress));
@@ -103,6 +106,8 @@ bool LogBuffer::saveLog(bool isAllocateBlock, bool isFreeBlock, bool isInsert, i
     }
     else
     {
+        memcpy(currentLogBufferSeek, &freeSpace, sizeof(freeSpace));
+        currentLogBufferSeek += sizeof(freeSpace);
         
         memcpy(currentLogBufferSeek, &offsetLocation, sizeof(offsetLocation));
         currentLogBufferSeek += sizeof(offsetLocation);

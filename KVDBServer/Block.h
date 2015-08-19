@@ -4,7 +4,11 @@
 
 #include <map>
 
-#define BLOCK_FIRST_FREE_SPACE 8192 - (sizeof(indirectionCnt)+ sizeof(freeSpace) + sizeof(chainingAddress))
+#define BLOCK_INDIRECTION_COUNT_OFFSET  0
+#define BLOCK_FREE_SPACE_OFFSET         sizeof(uint16_t)
+#define BLOCK_CHAINING_OFFSET           sizeof(uint16_t) + sizeof(uint16_t)
+#define BLOCK_HEADER_SIZE               sizeof(uint16_t) + sizeof(uint16_t) + sizeof(int64_t)
+#define BLOCK_FIRST_FREE_SPACE 8192 - (sizeof(uint16_t)+ sizeof(uint16_t) + sizeof(uint64_t))
 
 class Data;
 
