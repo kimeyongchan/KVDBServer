@@ -420,6 +420,7 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
             uint16_t firstIndBlockAdr   = newFirstBlock->getFirstIndirectionBlockAdr(newFirstBlockAdr);
             
             block->setChainingAddress(newFirstBlockAdr);
+            dirtyBlockInfoList.push_back(DirtyBlockInfo(curBlock, isAllockBlock, false, true, curBlockAdr, curIndBlockAdr, 0, newFirstBlockAdr));
             
             curBlock        = newFirstBlock;
             curIndBlockAdr  = firstIndBlockAdr;
@@ -482,7 +483,8 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
              insertBufferCacheDataMap.insert(std::pair<uint64_t, Block*>(newChingingBlockAdr, newChainingBlock)); // 체이닝 블럭 넣기
              
              uint16_t indNum_ = ibaToOffsetIdx(curIndBlockAdr, curBlockAdr);
-             dirtyBlockInfoList.push_back(DirtyBlockInfo(curBlock, isAllockBlock, false, true, curBlockAdr, indNum_, prevBlockAdr));
+             dirtyBlockInfoList.push_back(DirtyBlockInfo(curBlock, isAllockBlock, false, true, curBlockAdr, indNum_,
+                                                         prevBlockAdr, newChingingBlockAdr));
              
              curBlock               = newChainingBlock;
              curIndBlockAdr         = newBlockIndAdr;
@@ -500,13 +502,18 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
     // 로그버퍼에 넣는다
     for(DirtyBlockInfo blockInfo : dirtyBlockInfoList)
     {
-        uint64_t   blockAdr = blockInfo.blockAddress;
-        uint16_t   indNum   = blockInfo.indirectionNum;
-        uint16_t   offset   = blockInfo.block->getOffsetByIndNum(indNum);
-        Data*      data     = blockInfo.block->getData(indNum);
+        if(blockInfo.isLoging == false)
+            continue;
+        
+        uint64_t   blockAdr  = blockInfo.blockAddress;
+        uint16_t   freeSpace = blockInfo.block->getFreeSpace();
+        uint16_t   indNum    = blockInfo.indirectionNum;
+        uint16_t   offset    = blockInfo.block->getOffsetByIndNum(indNum);
+        Data*      data      = blockInfo.block->getData(indNum);
         
         KVDBServer::getInstance()->logBuffer->saveLog(blockInfo.isAllocateBlock,blockInfo.isFreeBlock, blockInfo.isInsert,
-                                                     blockAdr, indNum ,offset, data, blockInfo.prevBlockAddress);
+                                                      blockAdr, freeSpace, indNum ,offset, data,
+                                                      blockInfo.prevBlockAddress, blockInfo.nextBlockAddress);
     }
     
     // 로그파일에 쓴다
@@ -668,11 +675,11 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
          // 캐시버퍼용 데이터
          insertBufferCacheDataMap.insert(std::pair<uint64_t, Block*>(newLastBlockAdr, newLastBlock));
          insertBufferCacheDataMap.insert(std::pair<uint64_t, Block*>(newBlockAdr, newBlock));
-         
+    
          // 로깅, 디스크 용
-         dirtyBlockInfoList.push_back(DirtyBlockInfo(returnVal.block, false, false, true, blockAdr, 0, 0, false)); // 로깅은 안한다.
-         dirtyBlockInfoList.push_back(DirtyBlockInfo(newLastBlock, true, false, true, newLastBlockAdr, offsetIdx, blockAdr));
-         dirtyBlockInfoList.push_back(DirtyBlockInfo(newBlock, true, false, true, newBlockAdr, 0, 0, false)); // 로깅은 안한다.
+         dirtyBlockInfoList.push_back(DirtyBlockInfo(returnVal.block, false, false, true, blockAdr, 0, 0, newLastBlockAdr));
+         dirtyBlockInfoList.push_back(DirtyBlockInfo(newLastBlock, true, false, true, newLastBlockAdr, offsetIdx, blockAdr, 0));
+         dirtyBlockInfoList.push_back(DirtyBlockInfo(newBlock, true, false, true, newBlockAdr, 0, 0, 0, false)); // 로깅은 안한다
          
          
      }else // 기존 블럭에 넣을 수 있으면 컴팩션 여부 확인한다.
@@ -689,7 +696,7 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
          
          // 로깅, 디스크 용
          dirtyBlockInfoList.push_back(DirtyBlockInfo(lastBlock, false, false, true, lastBlockAdr, offsetIdx));
-         dirtyBlockInfoList.push_back(DirtyBlockInfo(newBlock, true, false, true, newBlockAdr, 0, 0, false)); // 로깅은 안한다.
+         dirtyBlockInfoList.push_back(DirtyBlockInfo(newBlock, true, false, true, newBlockAdr, 0, 0, 0, false)); // 로깅 안한다.
      }
      
      // 캐싱한다
@@ -702,13 +709,15 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
          if(blockInfo.isLoging == false)
              continue;
          
-         uint64_t   blockAdr = blockInfo.blockAddress;
-         uint16_t   indNum   = blockInfo.indirectionNum;
-         uint16_t   offset   = blockInfo.block->getOffsetByIndNum(indNum);
-         Data*      data     = blockInfo.block->getData(indNum);
+         uint64_t   blockAdr  = blockInfo.blockAddress;
+         uint16_t   freeSpace = blockInfo.block->getFreeSpace();
+         uint16_t   indNum    = blockInfo.indirectionNum;
+         uint16_t   offset    = blockInfo.block->getOffsetByIndNum(indNum);
+         Data*      data      = blockInfo.block->getData(indNum);
          
          KVDBServer::getInstance()->logBuffer->saveLog(blockInfo.isAllocateBlock,blockInfo.isFreeBlock, blockInfo.isInsert,
-                                                       blockAdr, indNum ,offset, data, blockInfo.prevBlockAddress);
+                                                       blockAdr, freeSpace, indNum ,offset, data,
+                                                       blockInfo.prevBlockAddress, blockInfo.nextBlockAddress);
      }
      
      // 로그파일에 쓴다
@@ -723,7 +732,7 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
          Block* block = blockInfo.block;
          uint64_t blockAdr = blockInfo.blockAddress;
          
-         if(blockInfo.isAllocateBlock == true)
+         if(blockInfo.isAllocateBlock)
          {
              char* bitArray = KVDBServer::getInstance()->superBlock->getUsingBlockBitArray();
              KVDBServer::getInstance()->diskManager->writeBitArray(bitArray);
@@ -955,21 +964,47 @@ int8_t IOManager::processInsert(InsertRequestInfo* reqInfo)
      if(deleteNamedData != NULL)
          namedCache->deleteData(delComponent, deleteNamedData);
      
+     
+     
+     
+     for(DirtyBlockInfo blockInfo : dirtyBlockInfoList)
+     {
+         if(blockInfo.isLoging == false)
+             continue;
+         
+         uint64_t   blockAdr  = blockInfo.blockAddress;
+         uint16_t   freeSpace = blockInfo.block->getFreeSpace();
+         uint16_t   indNum    = blockInfo.indirectionNum;
+         uint16_t   offset    = blockInfo.block->getOffsetByIndNum(indNum);
+         Data*      data      = blockInfo.block->getData(indNum);
+         
+         KVDBServer::getInstance()->logBuffer->saveLog(blockInfo.isAllocateBlock,blockInfo.isFreeBlock, blockInfo.isInsert,
+                                                       blockAdr, freeSpace, indNum ,offset, data,
+                                                       blockInfo.prevBlockAddress, blockInfo.nextBlockAddress);
+     }
+     
+     
+     
     // 로그버퍼 -> 블락에서 데이터 지우기 -> 버퍼캐시에서 블락 지우기(슈퍼블럭 1->0, 캐싱할 블럭에서 해당 블럭 정보 지우기)
      for(DirtyBlockInfo blockInfo : dirtyBlockInfoList)
      {
          
          Block*     block    = blockInfo.block;
-         uint64_t   blockAdr = blockInfo.blockAddress;
-         uint16_t   indNum   = blockInfo.indirectionNum;
-         uint16_t   offset   = blockInfo.block->getOffsetByIndNum(indNum);
-         Data*      data     = blockInfo.block->getData(indNum);
+         uint64_t   blockAdr  = blockInfo.blockAddress;
+         uint16_t   freeSpace = blockInfo.block->getFreeSpace();
+         uint16_t   indNum    = blockInfo.indirectionNum;
+         uint16_t   offset    = blockInfo.block->getOffsetByIndNum(indNum);
+         Data*      data      = blockInfo.block->getData(indNum);
          
         
-         KVDBServer::getInstance()->logBuffer->saveLog(blockInfo.isAllocateBlock,
-                                                       blockInfo.isInsert, blockAdr, offset, data);  // 바꿔줘야함
-         //KVDBServer::getInstance()->logBuffer->saveLog(blockInfo.isAllocateBlock,blockInfo.isFreeBlock, blockInfo.isInsert,
-         //                                             blockAdr, indNum ,offset, data, blockInfo.prevBlockAddress);
+         if(blockInfo.isLoging)
+         {
+             
+             KVDBServer::getInstance()->logBuffer->saveLog(blockInfo.isAllocateBlock,blockInfo.isFreeBlock, blockInfo.isInsert,
+                                                           blockAdr, freeSpace, indNum ,offset, data,
+                                                           blockInfo.prevBlockAddress, blockInfo.nextBlockAddress);
+         }
+         
          
          block->deleteData(indNum);
          

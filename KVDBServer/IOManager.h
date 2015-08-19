@@ -59,10 +59,11 @@ public:
     uint64_t    blockAddress;
     uint16_t    indirectionNum;
     uint64_t    prevBlockAddress;
+    uint64_t    nextBlockAddress;
     bool        isLoging;
     
     DirtyBlockInfo(Block* dirtyBlock, bool isAlloc, bool isFree, bool insertState,
-                   uint64_t blockAdr, uint16_t indNum, uint64_t prevBlockAdr = 0, bool logingState = true)
+                   uint64_t blockAdr, uint16_t indNum, uint64_t prevBlockAdr = 0, uint64_t nextBlockAdr = 0, bool logingState = true)
     {
         block               = dirtyBlock;
         isAllocateBlock     = isAlloc;
@@ -71,11 +72,9 @@ public:
         blockAddress        = blockAdr;
         indirectionNum      = indNum;
         prevBlockAddress    = prevBlockAdr;
+        nextBlockAddress    = nextBlockAdr;
         isLoging            = logingState;  // 블럭에 체이닝 주소만 바뀌었을때 : 로깅 안해도됨, 디스크에는 써야 함
-        
     }
-    
-    //isallocate = 0 , isFreeBlock = 1, isInsert = 0, blockAddress = 1번 블럭주소, uint16_t offsetLocation = 삭제할 데이터의 오프셋로케이션, uint16_t offset = 삭제할 데이터의 오프셋, const Data* data = 삭제할 데이터, int64_t prevBlockAddress = 0
 
 };
 
