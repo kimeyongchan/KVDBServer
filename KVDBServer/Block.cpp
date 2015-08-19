@@ -258,7 +258,10 @@ uint16_t Block::getLargestDatasDistanceSize()
         
     }
     
-    return largestDatasDis;
+    if(dataList.size() > 0)
+        return largestDatasDis;
+    else
+        return getFreeSpace();
     
 }
 

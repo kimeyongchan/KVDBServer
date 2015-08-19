@@ -45,7 +45,7 @@ bool BufferCache::insertBlock2Cache(uint64_t ba, Block* blk)
 }
 
 
-bool BufferCache::getDeleteBlock(uint64_t& rtba,Block& rtblk)  //arrange : ba, block
+bool BufferCache::getDeleteBlock(uint64_t& rtba,Block** rtblk)  //arrange : ba, block
 {
     uint64_t ba	= this->bufferQueue.front();
 	Block* temp = findBlock(ba);
@@ -53,7 +53,7 @@ bool BufferCache::getDeleteBlock(uint64_t& rtba,Block& rtblk)  //arrange : ba, b
 	if (temp->getDirty())
 	{
 		rtba = ba;
-		rtblk = *temp;
+		rtblk = &temp;
 		return true; //dirty Block
 	}
 	else
@@ -75,6 +75,7 @@ uint64_t BufferCache::newBlock()
     }
     
     char* bitArr = this->spB->getUsingBlockBitArray();
+    /*
 	for (int i = 0; i < this->spB->getBlockCount(); i++)
 	{
 		if (bitArr[i] == 0)
@@ -84,6 +85,47 @@ uint64_t BufferCache::newBlock()
             return ba;
 		}
 	}
+     */
+    
+    int i;
+    
+    for(i = 0; i < (this->spB->getBlockCount() / 8); i++)
+    {
+        for(int j = 0; j < 8; j++)
+        {
+            unsigned char constBit = 0x80;
+            
+            unsigned char cmpBit = constBit >> j;
+            
+            if((bitArr[i] & cmpBit) == 0)
+            {
+                uint64_t ba =this->spB->getRootBlockAddress() + (((i * 8) + j) * spB->getBlockSize());  // index * block size -> addr?
+                bitArr[i] |= cmpBit;
+                this->bufferQueue.push_back(ba);
+                return ba;
+            }
+        }
+    }
+    
+    int restBitCount = this->spB->getBlockCount() % 8;
+    
+    if(restBitCount != 0) // rest
+    {
+        for(int j = 0; j < restBitCount; j++)
+        {
+            unsigned char constBit = 0x80;
+            
+            unsigned char cmpBit = constBit >> j;
+            
+            if((bitArr[i] & cmpBit) == 0)
+            {
+                uint64_t ba =this->spB->getRootBlockAddress() + (((i * 8) + j) * spB->getBlockSize());  // index * block size -> addr?
+                bitArr[i] |= cmpBit;
+                this->bufferQueue.push_back(ba);
+                return ba;
+            }
+        }
+    }
 
 	return NULL;  // do not allocate new Block
 }
