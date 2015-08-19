@@ -67,30 +67,37 @@ public:
         
         for(auto it = dataMap->begin(); it != dataMap->end(); ++it)
         {
+            uint64_t rootBlockAdr  = spBlock->getRootBlockAddress();
+            uint16_t offsetLocation =  it->first;
+            uint64_t indBlockAdr = rootBlockAdr + BLOCK_HEADER_SIZE + (offsetLocation *2);
+            
             /*   make cache data in root block.  */
             Data* d = it->second->data;
             switch(d->getFormatType())
             {
                 case FLAG_DIRECTORY_DATA:
-                {   uint64_t ba = ((DirectoryData*)d)->getIndBlockAddress();
+                {   //uint64_t ba = ((DirectoryData*)d)->getIndBlockAddress();
                     string key = ((DirectoryData*)d)->getKey();
-                    ((RadixTree*)this->root->getRadixTree())->insertData(key, ba);
+                    //((RadixTree*)this->root->getRadixTree())->insertData(key, ba);
+                    ((RadixTree*)this->root->getRadixTree())->insertData(key, indBlockAdr);
                     this->namedQue.push_back(new NamedQueData(key));
                     break;
                 }
                 case FLAG_KEY_VALUE_DATA:
                 {
-                    uint64_t ba = this->root->getBlockAddress();
+                    //uint64_t ba = this->root->getBlockAddress();
                     string key = ((KeyValueData*)d)->getKey();
-                    ((RadixTree*)this->root->getRadixTree())->insertData(key, ba);
+                    //((RadixTree*)this->root->getRadixTree())->insertData(key, ba);
+                    ((RadixTree*)this->root->getRadixTree())->insertData(key, indBlockAdr);
                     this->namedQue.push_back(new NamedQueData(key));
                     break;
                 }
                 case FLAG_KEY_VALUE_CHAINING_DATA:
                 {
-                    uint64_t ba = ((KeyValueChainingData*)d)->getIndBlockAddress();
+                    //uint64_t ba = ((KeyValueChainingData*)d)->getIndBlockAddress();
                     string key = ((KeyValueChainingData*)d)->getKey();
-                    ((RadixTree*)this->root->getRadixTree())->insertData(key, ba);
+                    //((RadixTree*)this->root->getRadixTree())->insertData(key, ba);
+                    ((RadixTree*)this->root->getRadixTree())->insertData(key, indBlockAdr);
                     this->namedQue.push_back(new NamedQueData(key));
                     break;
                 }
