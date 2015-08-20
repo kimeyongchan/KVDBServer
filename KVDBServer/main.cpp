@@ -21,7 +21,6 @@ int main(int argc, const char * argv[])
 
     // KVDBServer::getInstance()->Run();
     
-    
     InsertDirectoryRequestInfo reqDirInfo_a;
     reqDirInfo_a.key ="a";
     
@@ -37,27 +36,34 @@ int main(int argc, const char * argv[])
     InsertRequestInfo reqInfo;
     reqInfo.key ="a/b/c/d";
     reqInfo.value = "he";
-    
-    
+
     
     IOManager ioMgr;
-    
     ioMgr.processInsert(&reqDirInfo_a);
-    
     ioMgr.processInsert(&reqDirInfo_ab);
-    
     ioMgr.processInsert(&reqDirInfo_abc);
-    
     ioMgr.processInsert(&reqInfo);
-    
 
-    FindRequestInfo findReqInfo;
-    findReqInfo.key = "a/b/c/d";
+    //FindRequestInfo findReqInfo;
+   // findReqInfo.key = "a/b/c/d";
     
-    ioMgr.processFind(&findReqInfo);
+    //ioMgr.processFind(&findReqInfo);
+    
+     DeleteRequestInfo delReqInfo;
+     delReqInfo.key = "a/b/c/d";
+    
+    ioMgr.processDelete(&delReqInfo);
+    
+  //  ioMgr.processFind(&findReqInfo);
     
     
     return 0;
     
 }
+
+
+
+
+
+
 

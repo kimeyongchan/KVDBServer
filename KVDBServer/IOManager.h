@@ -28,26 +28,6 @@ public:
     }
 };
 
-/*
-class LogBufferInsertData
-{
-public:
-    bool        isAllocateBlock;
-    bool        isInsert;
-    uint64_t    indBlockAddress;
-    uint16_t    offset;
-    const Data* data;
-    
-    LogBufferInsertData(bool isAlloc, bool insertState, uint64_t indBlockAdr, uint16_t offset, const Data* d)
-    {
-        isAllocateBlock = isAlloc;
-        isInsert = insertState;
-        indBlockAddress = indBlockAdr;
-        this->offset = offset;
-        data = d;
-    }
-};
- */
 
 class DirtyBlockInfo
 {
