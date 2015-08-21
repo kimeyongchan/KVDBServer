@@ -115,16 +115,6 @@ private:
     bool compaction(Block* block);
     bool caching(NamedData* firstParentData);
     
-    
-    
-public:
-    
-    void TEST_INSERT();
-    void TEST_INSERT_DIR();
-    void TEST_FIND();
-    void TEST_DELETE();
-    
-    
 };
 
 #endif // __I_O_MANAGER_H__

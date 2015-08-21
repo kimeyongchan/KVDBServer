@@ -44,8 +44,8 @@ int main(int argc, const char * argv[])
     ioMgr.processInsert(&reqDirInfo_abc);
     ioMgr.processInsert(&reqInfo);
 
-    //FindRequestInfo findReqInfo;
-   // findReqInfo.key = "a/b/c/d";
+    FindRequestInfo findReqInfo;
+    findReqInfo.key = "a/b/c/d";
     
     //ioMgr.processFind(&findReqInfo);
     
