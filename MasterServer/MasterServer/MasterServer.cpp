@@ -47,11 +47,16 @@ bool MasterServer::Initialize(int workerThreadCount)
     }
     
     network = new Network();
-    if (network->Initialize(networkInfoList, networkInfoCount, workerThreadCount, workerThreadArray, 5000, 3) == false)
+    if (network->Initialize(networkInfoList, networkInfoCount, workerThreadCount, workerThreadArray, 0, 0) == false)
     {
         ErrorLog("Network error");
         return false;
     }
+    slaveInfo[0].used = 0;
+    slaveInfo[1].used = 0;
+    
+    slaveInfo[0].port = 20000;
+    slaveInfo[1].port = 20001;
 
 	return true;
 }

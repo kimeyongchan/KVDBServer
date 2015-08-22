@@ -201,10 +201,6 @@ bool LogBuffer::saveLog(bool isAllocateBlock, bool isFreeBlock, bool isInsert, i
     
     return true;
 }
-/*
-void LogBuffer::clear()
-{
-    logLen = 0;
-    currentLogBufferSeek = logBuffer;
-    cln++;
-}*/
+
+
+

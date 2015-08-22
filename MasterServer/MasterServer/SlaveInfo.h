@@ -9,11 +9,13 @@
 #ifndef MasterServer_SlaveInfo_h
 #define MasterServer_SlaveInfo_h
 
+#include <stdint.h>
 
 struct SlaveInfo
 {
+    int8_t used;
     char ip[16];
-    unsigned short port;
+    uint16_t port;
     
 };
 

@@ -31,15 +31,15 @@ bool XmlData::loadServerInfoList()
     serverInfoList = new ServerInfo[serverInfoCount];
     memset(serverInfoList, 0, sizeof(ServerInfo) * serverInfoCount);
     
-    serverInfoList[0].serverType = SERVER_TYPE_SERVER;
+    serverInfoList[0].serverType = SERVER_TYPE_CLIENT;
     serverInfoList[0].serverModule = SERVER_MODULE_MASTER;
     memcpy(serverInfoList[0].ip, "127.0.0.1", 9);
-    serverInfoList[0].port = 20000;
-    
+    serverInfoList[0].port = 10000;
+    /*
     serverInfoList[1].serverType = SERVER_TYPE_SERVER;
     serverInfoList[1].serverModule = SERVER_MODULE_CLIENT;
     memcpy(serverInfoList[1].ip, "127.0.0.1", 9);
     serverInfoList[1].port = 3308;
-
+*/
     return true;
 }

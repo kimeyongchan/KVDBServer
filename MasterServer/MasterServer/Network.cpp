@@ -292,13 +292,13 @@ void Network::ProcessEvent()
             {
                 bool isServer = false;
                 
-                for(int i = 0; i < listenSocketCount; i++)
+                for(int j = 0; j < listenSocketCount; j++)
                 {
-                    if(event[i].ident == serverConnectInfoList[i].fd) // Server sock
+                    if(event[i].ident == serverConnectInfoList[j].fd) // Server sock
                     {
                         isServer = true;
                         
-                        clntFd = accept(serverConnectInfoList[i].fd, (struct sockaddr *)&clntaddr, (socklen_t*)&clntaddrLen);
+                        clntFd = accept(serverConnectInfoList[j].fd, (struct sockaddr *)&clntaddr, (socklen_t*)&clntaddrLen);
                         if (clntFd < 0)
                         {
                             ErrorLog("accept fail.");
@@ -314,7 +314,7 @@ void Network::ProcessEvent()
                             break;
                         }
                         
-                        connectInfo->serverModule = serverConnectInfoList[i].serverModule;
+                        connectInfo->serverModule = serverConnectInfoList[j].serverModule;
                         
                         
                         EV_SET(&connectEvent, clntFd, EVFILT_READ | EVFILT_WRITE, EV_ADD, 0, 0, (void*)connectInfo);

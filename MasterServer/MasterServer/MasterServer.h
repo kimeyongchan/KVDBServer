@@ -2,6 +2,7 @@
 #define __MASTER_SERVER_H__
 
 #include <stddef.h>
+#include "SlaveInfo.h"
 
 class Network;
 class XmlData;
@@ -28,6 +29,7 @@ public:
 	Network* network;
 	Log* log;
     XmlData* xmlData;
+    SlaveInfo slaveInfo[2];
 };
 
 #endif //__MASTER_SERVER_H__

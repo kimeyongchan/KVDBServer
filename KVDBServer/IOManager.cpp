@@ -20,6 +20,8 @@
 #include "radix_tree.h"
 #include "LogBuffer.h"
 
+#include "ServerMasterPacket.h"
+
 IOManager::IOManager()
 {
 }
@@ -114,7 +116,40 @@ void IOManager::receiveClientData(const ConnectInfo* connectInfo, const char* da
 
 void IOManager::receiveMasterData(const ConnectInfo* connectInfo, const char* data, int dataSize)
 {
+    uint8_t commandType;
+    memcpy(&commandType, data, sizeof(commandType));
     
+    if(commandType == ServerMasterPacket::COMMAND_TYPE_OPEN_CLIENT_SOCK_REQ)
+    {
+        uint16_t port;
+        memcpy(&port, data + commandType, sizeof(port));
+        NetworkInfo networkInfo;
+        networkInfo.type = SERVER_TYPE_SERVER;
+        networkInfo.module = SERVER_MODULE_CLIENT;
+        memset(networkInfo.ip, 0, MAX_IP_LEN + 1);
+        memcpy(networkInfo.ip, "127.0.0.1", 9);
+        networkInfo.port = port;
+        
+        if(KVDBServer::getInstance()->network->AddNetworkInfo(&networkInfo) == false)
+        {
+            ErrorLog("network add false");
+            return ;
+        }
+        
+        ServerMasterPacket::OpenClientSockRes ocsr;
+        memset(ocsr.ip, 0, sizeof(MAX_IP_LEN + 1));
+        memcpy(ocsr.ip, "127.0.0.1", 9);
+        ocsr.port = port;
+        
+        char sendArray[sizeof(ocsr)];
+        memcpy(sendArray, &ocsr, sizeof(ocsr));
+        KVDBServer::getInstance()->network->sendData(tfd, connectInfo, sendArray, sizeof(ocsr));
+        DebugLog("Send ");
+    }
+    else
+    {
+        ErrorLog("invalid commandType - %d", commandType);
+    }
 }
 
 bool IOManager::parsingQuery(const char* query, int queryLen, RequestInfo** pri) // pasing query to requestInfo

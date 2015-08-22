@@ -10,13 +10,13 @@
 #include "KVDBClient.h"
 
 const char* IP_ADDRESS = "127.0.0.1";
-const char* PORT = "3308";
+const char* PORT = "3307";
 const char* ID = "root";
 const char* PASSWORD = "1234";
 
 int main(int argc, char *argv[])
 {
-    char query[1024] = "insert(\"key1\",\"value1\");";
+    char query[1024] = "insert(\"a\",\"value1\");";
 
     KVDB conn; // 연결하기 위한 객체 생성
     
@@ -27,12 +27,10 @@ int main(int argc, char *argv[])
         printf("connect error");
         return -1;
     }
-    for(int i=0 ; i < 10; i ++)
-    {
-    KVDB_sendQuery(&conn, query, strlen(query)); // 쿼리 보내기
-    }
 
-    sleep(1);
+    KVDB_sendQuery(&conn, query, strlen(query)); // 쿼리 보내기
+
+    sleep(10);
     KVDB_close(&conn); // 디비와 연결 끊기
     
     return 0;

@@ -121,7 +121,7 @@ bool Network::Initialize(const NetworkInfo* _networkInfo, int _networkInfoCount,
         if(_networkInfo[i].type == SERVER_TYPE_SERVER)
             listenSocketCount++;
     
-    serverConnectInfoList = new ConnectInfo[listenSocketCount]; // (ConnectInfo*)malloc(sizeof(ConnectInfo) * listenSocketCount);
+    //serverConnectInfoList = new ConnectInfo[listenSocketCount]; // (ConnectInfo*)malloc(sizeof(ConnectInfo) * listenSocketCount);
     
     listenSocketCount = 0;
     
@@ -162,11 +162,14 @@ bool Network::AddNetworkInfo(const NetworkInfo* _networkInfo)
 {
     if(_networkInfo->type == SERVER_TYPE_SERVER)
     {
-        serverConnectInfoList = (ConnectInfo*)realloc(serverConnectInfoList, sizeof(ConnectInfo) * (listenSocketCount + 1));
+        
+        //serverConnectInfoList = (ConnectInfo*)realloc(serverConnectInfoList, sizeof(ConnectInfo) * (listenSocketCount + 1));
+        
+        
         if(AddServerTypeNetworkInfo(_networkInfo) == false)
         {
             ErrorLog("AddServerType NetworkInfo error");
-            serverConnectInfoList = (ConnectInfo*)realloc(serverConnectInfoList, sizeof(ConnectInfo) * (listenSocketCount));
+            //serverConnectInfoList = (ConnectInfo*)realloc(serverConnectInfoList, sizeof(ConnectInfo) * (listenSocketCount));
             return false;
         }
     }
@@ -292,13 +295,13 @@ void Network::ProcessEvent()
             {
                 bool isServer = false;
                 
-                for(int i = 0; i < listenSocketCount; i++)
+                for(int j = 0; j < listenSocketCount; j++)
                 {
-                    if(event[i].ident == serverConnectInfoList[i].fd) // Server sock
+                    if(event[i].ident == serverConnectInfoList[j].fd) // Server sock
                     {
                         isServer = true;
                         
-                        clntFd = accept(serverConnectInfoList[i].fd, (struct sockaddr *)&clntaddr, (socklen_t*)&clntaddrLen);
+                        clntFd = accept(serverConnectInfoList[j].fd, (struct sockaddr *)&clntaddr, (socklen_t*)&clntaddrLen);
                         if (clntFd < 0)
                         {
                             ErrorLog("accept fail.");
@@ -314,7 +317,7 @@ void Network::ProcessEvent()
                             break;
                         }
                         
-                        connectInfo->serverModule = serverConnectInfoList[i].serverModule;
+                        connectInfo->serverModule = serverConnectInfoList[j].serverModule;
                         
                         
                         EV_SET(&connectEvent, clntFd, EVFILT_READ | EVFILT_WRITE, EV_ADD, 0, 0, (void*)connectInfo);

@@ -15,6 +15,7 @@
 #define MAX_IP_LEN 15
 #define EVENT_BUFFER_SIZE 50
 #define MAX_CONNECT_SIZE 100
+#define MAX_SERVER_CONNECT_COUNT 10
 #define RECV_BUF 5000
 
 typedef int8_t dataType_t;
@@ -120,7 +121,7 @@ private:
 	int clntaddrLen;
     int listenSocketCount;
 	
-    ConnectInfo* serverConnectInfoList;
+    ConnectInfo serverConnectInfoList[MAX_SERVER_CONNECT_COUNT];
 	ConnectInfo connectInfoList[MAX_CONNECT_SIZE];
 
 	char recvBuffer[RECV_BUF];
