@@ -28,26 +28,6 @@ public:
     }
 };
 
-/*
-class LogBufferInsertData
-{
-public:
-    bool        isAllocateBlock;
-    bool        isInsert;
-    uint64_t    indBlockAddress;
-    uint16_t    offset;
-    const Data* data;
-    
-    LogBufferInsertData(bool isAlloc, bool insertState, uint64_t indBlockAdr, uint16_t offset, const Data* d)
-    {
-        isAllocateBlock = isAlloc;
-        isInsert = insertState;
-        indBlockAddress = indBlockAdr;
-        this->offset = offset;
-        data = d;
-    }
-};
- */
 
 class DirtyBlockInfo
 {
@@ -134,16 +114,6 @@ private:
     uint64_t ibaToBa(uint64_t iba);
     bool compaction(Block* block);
     bool caching(NamedData* firstParentData);
-    
-    
-    
-public:
-    
-    void TEST_INSERT();
-    void TEST_INSERT_DIR();
-    void TEST_FIND();
-    void TEST_DELETE();
-    
     
 };
 

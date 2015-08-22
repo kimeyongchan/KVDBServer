@@ -139,10 +139,74 @@ void BufferCache::deleteDirty(uint64_t ba)
 
 }
 
-void BufferCache::setBitArrayFlag(uint64_t ba)
+void BufferCache::setBitArrayFlag(uint64_t blockAdr)
 {
-    uint64_t idx = (ba / BLOCK_SIZE )- 1;
+//    uint64_t idx = ((ba - this->spB->getRootBlockAddress()) / BLOCK_SIZE )- 1;
+//    char* bitArr = this->spB->getUsingBlockBitArray();
+//    bitArr[idx]? bitArr[idx] = 0 : bitArr[idx] = 1;
+    
     char* bitArr = this->spB->getUsingBlockBitArray();
-    bitArr[idx]? bitArr[idx] = 0 : bitArr[idx] = 1;
+    int i;
+    for(i = 0; i < (this->spB->getBlockCount() / 8); i++)
+    {
+        for(int j = 0; j < 8; j++)
+        {
+            unsigned char constBit = 0x80;
+            unsigned char cmpBit = constBit >> j;
+            
+            if((bitArr[i] & cmpBit) == 0)
+            {
+                uint64_t ba =this->spB->getRootBlockAddress() + (((i * 8) + j) * spB->getBlockSize());  // index * block size -> addr?
+                
+                if(ba == blockAdr)
+                {
+                    bitArr[i] ^= cmpBit;
+                    return;
+                }
+            }
+        }
+    }
+    
+    int restBitCount = this->spB->getBlockCount() % 8;
+    
+    if(restBitCount != 0) // rest
+    {
+        for(int j = 0; j < restBitCount; j++)
+        {
+            unsigned char constBit = 0x80;
+            unsigned char cmpBit = constBit >> j;
+            
+            if((bitArr[i] & cmpBit) == 0)
+            {
+                uint64_t ba =this->spB->getRootBlockAddress() + (((i * 8) + j) * spB->getBlockSize());  // index * block size -> addr?
+                
+                if(ba == blockAdr)
+                {
+                    bitArr[i] ^= cmpBit;
+                    return;
+                }
+            }
+        }
+    }
     
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
