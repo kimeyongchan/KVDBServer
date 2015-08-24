@@ -44,13 +44,15 @@ public:
 
 void KVDB::Receive(const ConnectInfo* connectInfo, const char *data, int dataSize)
 {
+    const char* pData = data;
     uint8_t commandType;
-    memcpy(&commandType, data, sizeof(commandType));
+    memcpy(&commandType, pData, sizeof(commandType));
+    pData += sizeof(commandType);
+    
     if(connectInfo->serverModule == SERVER_MODULE_MASTER_SERVER)
     {
         if(commandType == ClientMasterPacket::COMMAND_TYPE_SERVER_INFO_NOTIFY)
         {
-            printf("ok");
             for(int i = 0; i < 2; i++)
             {
                 char ip[16];
@@ -60,15 +62,54 @@ void KVDB::Receive(const ConnectInfo* connectInfo, const char *data, int dataSiz
                 memcpy(&port, data + sizeof(commandType) + 16 + sizeof(ClientMasterPacket::ServerInfo) * i, sizeof(port));
                 
                 int fd = network->connectWithServer(SERVER_MODULE_KVDB_SERVER, ip, port);
-                serverFd[i + 1] = fd;
-                printf("%s %d %d \n", ip, port, fd);
-            
+                serverFd[i + 1] = fd;            
             }
         }
     }
-    else
+    else if(connectInfo->serverModule == SERVER_MODULE_KVDB_SERVER)
     {
-        printf("invalid commandType - %d", commandType);
+        if(commandType == ClientServerPacket::RESULT_TYPE_INSERT_FILE)
+        {
+            ClientServerPacket::InsertFileRes* res = new ClientServerPacket::InsertFileRes();
+            memcpy(res, data, sizeof(ClientServerPacket::InsertFileRes));
+            result = res;
+        }
+        else if(commandType == ClientServerPacket::RESULT_TYPE_INSERT_DIRECTORY)
+        {
+            ClientServerPacket::InsertDirectoryRes* res = new ClientServerPacket::InsertDirectoryRes();
+            memcpy(res, data, sizeof(ClientServerPacket::InsertDirectoryRes));
+            result = res;
+        }
+        else if(commandType == ClientServerPacket::RESULT_TYPE_FIND_FILE)
+        {
+            ClientServerPacket::FindFileRes* res = new ClientServerPacket::FindFileRes();
+            memcpy(res, data, sizeof(res->resultType) + sizeof(res->resultCode) + sizeof(res->valueLen));
+            res->value = (char*)malloc(res->valueLen); //ToDo. free
+            memcpy(res->value, data + sizeof(res->resultType) + sizeof(res->resultCode) + sizeof(res->valueLen), res->valueLen);
+            result = res;
+        }
+        else if(commandType == ClientServerPacket::RESULT_TYPE_FIND_DIRECTORY)
+        {
+            ClientServerPacket::FindDirectoryRes* res = new ClientServerPacket::FindDirectoryRes();
+            memcpy(res, data, sizeof(ClientServerPacket::FindDirectoryRes) - sizeof(ClientServerPacket::KeyInfo));
+            result = res;
+        }
+        else if(commandType == ClientServerPacket::RESULT_TYPE_DELETE_FILE)
+        {
+            ClientServerPacket::DeleteFileRes* res = new ClientServerPacket::DeleteFileRes();
+            memcpy(res, data, sizeof(ClientServerPacket::DeleteFileRes));
+            result = res;
+        }
+        else if(commandType == ClientServerPacket::RESULT_TYPE_DELETE_DIRECTORY)
+        {
+            ClientServerPacket::DeleteDirectoryRes* res = new ClientServerPacket::DeleteDirectoryRes();
+            memcpy(res, data, sizeof(ClientServerPacket::DeleteDirectoryRes));
+            result = res;
+        }
+        else
+        {
+            printf("invalid type - %d", commandType);
+        }
     }
     
 }
@@ -107,7 +148,7 @@ void KVDB_sendQuery(KVDB* conn, const char* query, int queryLen)
 {
     std::string queryStr(query);
     int index = (int)queryStr.find_first_of('\"');
-    
+
     if(index < 0)
     {
         return ;
@@ -115,7 +156,7 @@ void KVDB_sendQuery(KVDB* conn, const char* query, int queryLen)
     
     int sendServer = query[index+1] % 2;
     
-    conn->network->sendPacket(conn->serverFd[sendServer], query, queryLen);
+    conn->network->sendPacket(conn->serverFd[sendServer + 1], query, queryLen);
     
     if(conn->result != NULL)
     {
@@ -160,7 +201,8 @@ void KVDB_sendQuery(KVDB* conn, const char* query, int queryLen)
         }
     }
     
-    char readBuf[2048];
+    conn->network->receiveData(conn->serverFd[sendServer + 1]);
+    
     /*
     read(conn->s, )
     

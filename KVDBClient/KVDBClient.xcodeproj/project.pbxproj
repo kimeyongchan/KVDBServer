@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		6FCF0E5A1B85981C00D3A87B /* Network.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6FCF0E581B85981C00D3A87B /* Network.cpp */; };
 		6FE490BA1B68AD0900B6E52C /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6FE490B91B68AD0900B6E52C /* main.cpp */; };
 /* End PBXBuildFile section */
 
@@ -23,6 +24,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		6FCF0E571B84940600D3A87B /* ClientServerPacket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ClientServerPacket.h; sourceTree = "<group>"; };
+		6FCF0E581B85981C00D3A87B /* Network.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Network.cpp; sourceTree = "<group>"; };
+		6FCF0E591B85981C00D3A87B /* Network.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Network.h; sourceTree = "<group>"; };
+		6FCF0E621B87611B00D3A87B /* ClientMasterPacket.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ClientMasterPacket.h; sourceTree = "<group>"; };
 		6FE490B61B68AD0900B6E52C /* KVDBClient */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = KVDBClient; sourceTree = BUILT_PRODUCTS_DIR; };
 		6FE490B91B68AD0900B6E52C /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		6FE490C01B68AD3000B6E52C /* KVDBClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = KVDBClient.h; sourceTree = "<group>"; };
@@ -58,8 +63,12 @@
 		6FE490B81B68AD0900B6E52C /* KVDBClient */ = {
 			isa = PBXGroup;
 			children = (
+				6FCF0E571B84940600D3A87B /* ClientServerPacket.h */,
 				6FE490C01B68AD3000B6E52C /* KVDBClient.h */,
 				6FE490B91B68AD0900B6E52C /* main.cpp */,
+				6FCF0E581B85981C00D3A87B /* Network.cpp */,
+				6FCF0E591B85981C00D3A87B /* Network.h */,
+				6FCF0E621B87611B00D3A87B /* ClientMasterPacket.h */,
 			);
 			path = KVDBClient;
 			sourceTree = "<group>";
@@ -120,6 +129,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6FCF0E5A1B85981C00D3A87B /* Network.cpp in Sources */,
 				6FE490BA1B68AD0900B6E52C /* main.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -237,6 +247,7 @@
 				6FE490BF1B68AD0900B6E52C /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

@@ -282,6 +282,7 @@ bool Network::receiveData(int fd)
         printf("readCnt %d", readCnt);
     }
     
+    memset(recvBuffer, 0, 5000);
     return true;
 }
 

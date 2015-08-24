@@ -48,6 +48,9 @@
 		6FCF0E151B79AA6600D3A87B /* XmlData.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = XmlData.h; sourceTree = "<group>"; };
 		6FCF0E261B79AC8000D3A87B /* MasterServer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MasterServer.cpp; sourceTree = "<group>"; };
 		6FCF0E271B79AC8000D3A87B /* MasterServer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MasterServer.h; sourceTree = "<group>"; };
+		6FCF0E5D1B87498700D3A87B /* ServerMasterPacket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ServerMasterPacket.h; sourceTree = "<group>"; };
+		6FCF0E5E1B87498700D3A87B /* SlaveInfo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SlaveInfo.h; sourceTree = "<group>"; };
+		6FCF0E631B88482B00D3A87B /* ClientMasterPacket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ClientMasterPacket.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -80,6 +83,9 @@
 		6FCF0DEB1B79A87F00D3A87B /* MasterServer */ = {
 			isa = PBXGroup;
 			children = (
+				6FCF0E631B88482B00D3A87B /* ClientMasterPacket.h */,
+				6FCF0E5D1B87498700D3A87B /* ServerMasterPacket.h */,
+				6FCF0E5E1B87498700D3A87B /* SlaveInfo.h */,
 				6FCF0E261B79AC8000D3A87B /* MasterServer.cpp */,
 				6FCF0E271B79AC8000D3A87B /* MasterServer.h */,
 				6FCF0DF31B79AA6600D3A87B /* BasicDefines.h */,
@@ -281,6 +287,7 @@
 				6FCF0DF21B79A87F00D3A87B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
